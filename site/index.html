@@ -14,7 +14,7 @@
     <p class="eyebrow">skills.polyhydra.app</p>
     <h1>Polyhydra Skills</h1>
     <p class="tagline">Claude Code skills I actually use day to day, packaged as copy-paste
-    <code>SKILL.md</code> files. 32 skills, 12 of them homelab-internal
+    <code>SKILL.md</code> files. 33 skills, 12 of them homelab-internal
     (pattern only, no implementation).</p>
   </div>
 
@@ -193,6 +193,16 @@
       </div>
     </div>
 
+    <div class="group">
+      <h2>Uncategorized</h2>
+      <div class="grid">
+        <a class="skill-card" href="/dogfood-staging/" data-name="dogfood-staging" data-desc="take a late-development app from &amp;quot;code works locally&amp;quot; to a durable staging deployment (e.g. staging.&amp;lt;app&amp;gt;.com) that the owner actually uses day-to-day, then track what dogfooding surfaces and decide when it&amp;#x27;s ready to graduate to production. use when a project has a defined v1/stabilizing scope and the next step is standing up a semi-durable staging environment, when the user says &amp;quot;dogfood&amp;quot;, &amp;quot;staging site&amp;quot;, &amp;quot;staging.&amp;lt;app&amp;gt;.com&amp;quot;, or asks whether a project is ready for a staging cutover.">
+          <div class="name">dogfood-staging</div>
+          <div class="desc">Take a late-development app from &quot;code works locally&quot; to a durable staging deployment (e.g. staging.&lt;app&gt;.com) that the owner actually uses day-to-day, then track what dogfooding surfaces and decide when it&#x27;s ready to graduate to production. Use when a project has a defined V1/stabilizing scope and the next step is standing up a semi-durable staging environment, when the user says &quot;dogfood&quot;, &quot;staging site&quot;, &quot;staging.&lt;app&gt;.com&quot;, or asks whether a project is ready for a staging cutover.</div>
+        </a>
+      </div>
+    </div>
+
   <footer>
     Generated from a personal Claude Code skill library. Requires
     <a href="https://claude.com/product/claude-code">Claude Code</a> to use.
@@ -217,7 +227,7 @@
       var anyShown = g.querySelectorAll('.skill-card:not(.hidden)').length > 0;
       g.style.display = anyShown ? '' : 'none';
     });
-    count.textContent = q ? (shown + ' of 32 skills') : '';
+    count.textContent = q ? (shown + ' of 33 skills') : '';
   }
   input.addEventListener('input', apply);
 })();

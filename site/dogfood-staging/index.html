@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>dogfood-staging — Polyhydra Skills</title>
+<meta name="description" content="Take a late-development app from &quot;code works locally&quot; to a durable staging deployment (e.g. staging.&lt;app&gt;.com) that the owner actually uses day-to-day, then track what dogfooding surfaces and decide w">
+<link rel="stylesheet" href="/assets/style.css">
+</head>
+<body>
+<div class="page">
+
+  <p class="eyebrow"><a href="/">Polyhydra Skills</a> &nbsp;/&nbsp; Uncategorized</p>
+  <h1>dogfood-staging</h1>
+  <p class="tagline">Take a late-development app from &quot;code works locally&quot; to a durable staging deployment (e.g. staging.&lt;app&gt;.com) that the owner actually uses day-to-day, then track what dogfooding surfaces and decide when it&#x27;s ready to graduate to production. Use when a project has a defined V1/stabilizing scope and the next step is standing up a semi-durable staging environment, when the user says &quot;dogfood&quot;, &quot;staging site&quot;, &quot;staging.&lt;app&gt;.com&quot;, or asks whether a project is ready for a staging cutover.</p>
+  <div class="badges"><span class="badge">Uncategorized</span></div>
+  <hr class="rule" />
+
+  <div class="install">
+    <p>Drop this in — save the block below as <code>~/.claude/skills/dogfood-staging/SKILL.md</code>, or run:</p>
+    <pre>mkdir -p ~/.claude/skills/dogfood-staging
+cat &gt; ~/.claude/skills/dogfood-staging/SKILL.md &lt;&lt;'EOF'
+# (paste the full source block below into this file)
+EOF</pre>
+  </div>
+
+  <section>
+    <h2>Full source</h2>
+    <details>
+      <summary>SKILL.md — copy everything inside</summary>
+      <pre># Dogfood Staging
+
+The move from &quot;V1 is stabilizing&quot; to &quot;this app is real&quot; is a durable staging
+deployment the owner actually lives in, not a demo. This skill sequences that
+move and composes existing skills for the mechanics rather than duplicating
+them — it does not replace `v1-delivery-shaping`, `mapped-frontier-development`,
+`r620-deploy`/`stack-apply`, or `cloudflare-dns`; it&#x27;s the checklist that
+strings them together at this specific point in a project&#x27;s life.
+
+## When this applies
+
+- The project already has a recorded V1 definition (`v1-delivery-shaping`) and
+  is in or past stabilization — not still adding core feature scope.
+- The goal is a **standing, durable** environment the owner dogfoods against
+  repeatedly (days/weeks), not a one-off demo or a throwaway preview build.
+- Distinct from the app&#x27;s existing `dev.&lt;app&gt;.com` / `debug.&lt;app&gt;.com` /
+  `localhost` tiers (per whatever ADRs the app already has — check
+  `docs/decisions/` first): staging is the tier right before production,
+  carries closer-to-real config, and is where the owner notices real gaps by
+  actually using the thing.
+
+If the project is still adding V1 scope, or doesn&#x27;t have a recorded V1
+definition yet, run `v1-delivery-shaping` first — dogfooding an undefined
+scope just produces noise about missing features that were never promised.
+
+## Phase 1 — Scope freeze
+
+1. Confirm the V1 definition (or current stabilization scope) is current —
+   re-read the owning epic, don&#x27;t assume last session&#x27;s understanding still
+   holds.
+2. Explicitly list what does **not** need to work yet for staging to be
+   useful. Dogfooding surfaces real gaps fastest when the owner knows which
+   gaps are already known-and-deferred versus genuinely new.
+3. If standing up staging is itself a material change (new public hostname,
+   new secret scope, new auth callback surface, a data-retention decision),
+   run it through `mapped-frontier-development` Phase 0 rather than treating
+   DNS + deploy as routine — this is exactly the &quot;material deployment
+   change&quot; case that skill exists for.
+
+## Phase 2 — Stand up the environment
+
+1. **Naming**: `staging.&lt;app-domain&gt;` (e.g. `staging.channelcheevos.com`),
+   distinct from any existing `dev.`/`debug.` tier. Confirm the actual domain
+   the app uses — check existing ADRs/Infisical config before assuming
+   `polyhydragames.com`/`polyhydra.app`; some apps (e.g. channel-cheevos) use
+   their own domain.
+2. **DNS**: use the `cloudflare-dns` skill — create the record before
+   deploying, not after (&quot;DNS first, not as an afterthought&quot; is called out
+   explicitly in `r620-deploy` because skipping it was real, avoidable
+   friction previously).
+3. **Deploy**: use `r620-deploy` for a first-time stack, `stack-apply` to
+   reconcile an existing one. Staging must be a tracked Portainer/Swarm stack
+   sourced from the repo&#x27;s `homelab-gitops` definition — not a rogue local
+   `docker run`/build (see the repo&#x27;s own no-rogue-builds policy if it has
+   one). Verify with the same rigor as production: real TLS cert subject,
+   clean startup logs, a real endpoint through the public path — staging
+   being &quot;less important&quot; than prod is not a reason to skip verification;
+   it&#x27;s the thing the owner is about to trust daily.
+4. **Secrets**: staging gets its own credential set, never copied production
+   secrets. Use `infisical-lookup` to find where sibling secrets for this app
+   already live, `secret-apply` to generate/land new ones. Check whether the
+   app has its own dogfood/staging secret-boundary ADR first (e.g.
+   channel-cheevos&#x27;s `docs/decisions/0001-auth0-dogfood-boundary.md` pattern
+   — a real precedent for &quot;staging must not become an implicit
+   production/provider-migration change&quot;).
+5. **Auth callbacks**: if the app has OIDC/OAuth login, staging needs its own
+   callback/logout/origin allowlist entries (see `keycloak-admin` skill or
+   the app&#x27;s own auth provider config) — don&#x27;t reuse production or dev
+   callback URLs.
+
+## Phase 3 — Dogfood tracking
+
+1. Use the staging environment for real, ongoing use — not a single smoke
+   test. The point is surfacing gaps only real use finds.
+2. File every gap found as a GitHub issue on the app&#x27;s repo, tagged so
+   dogfood-sourced issues are distinguishable from originally-planned V1
+   scope (e.g. a `dogfood` label). This keeps &quot;what staging use taught us&quot;
+   separate from &quot;what we already knew we&#x27;d build.&quot;
+3. Triage using the same severity judgment as `v1-delivery-shaping`&#x27;s P0–P2
+   language: repair blockers before graduation, defer polish to tracked
+   follow-ups.
+4. If the `quest-log` skill or a similar dashboard is already in use for this
+   repo, surface dogfood-tagged issues there rather than starting a separate
+   tracking document.
+
+## Phase 4 — Graduation criteria
+
+Staging is ready to inform a production cutover decision when:
+
+- No open P0/P1 dogfood-tagged issues remain.
+- The owner has used it continuously (not just tested it) for a length of
+  time they&#x27;re comfortable calling representative — this is a judgment call
+  for the owner, not a fixed duration this skill should assume.
+- Deployment mechanics (DNS, secrets, auth callbacks, verification steps
+  above) are proven repeatable, not just &quot;worked once.&quot;
+
+Graduating to production is its own decision requiring its own explicit
+confirmation — this skill stands up and validates staging; it does not
+authorize a production cutover, merge, or DNS cutover to a production
+hostname. Treat that as a separate, explicitly confirmed action per this
+project&#x27;s standing authorization rules for outward-facing changes.
+
+## Related skills
+
+- `v1-delivery-shaping` — defines the scope staging is meant to validate;
+  run first if V1 isn&#x27;t yet defined.
+- `mapped-frontier-development` — Phase 0 packet for standing up staging when
+  it&#x27;s a material change, not routine.
+- `cloudflare-dns`, `r620-deploy`, `stack-apply` — the actual DNS/deploy
+  mechanics this skill sequences but doesn&#x27;t duplicate.
+- `infisical-lookup`, `secret-apply` — staging&#x27;s own secret set.
+- `keycloak-admin` — staging-specific OIDC callback config, if applicable.
+- `quest-log` — surfacing dogfood-tagged issues if the repo already uses it.</pre>
+    </details>
+  </section>
+
+  <footer>
+    Part of the <a href="/">Polyhydra Skills</a> catalog. Requires
+    <a href="https://claude.com/product/claude-code">Claude Code</a>.
+  </footer>
+
+</div>
+</body>
+</html>

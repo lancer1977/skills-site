@@ -87,27 +87,56 @@ Bad storm material — keep this on yourself or a Sonnet lane instead:
    comfortable with it running unattended, and read the report when it
    lands.
 
-## Worked example (from 2026-08-17, channel-cheevos + CC-Client)
+## Why this works
+
+The value isn&#x27;t parallelism for its own sake — it&#x27;s the split between work
+that needs judgment and work that only needs verification:
+
+- **Verification is cheap to parallelize; judgment isn&#x27;t.** &quot;Is this issue
+  actually fixed on the target branch&quot; or &quot;is this worktree actually
+  clean&quot; are yes/no checks against ground truth. Four agents can each
+  answer one independently without stepping on each other. &quot;Should we
+  merge this this way&quot; can&#x27;t be split the same way — it needs one thread
+  holding the full context.
+- **The orchestrator&#x27;s time is the scarce resource, not compute.** Running
+  a storm alongside your own sequential judgment work (a merge conflict, a
+  design call) means the storm&#x27;s wall-clock is free — it finishes while
+  you&#x27;re doing something only you could do anyway.
+- **A lane that refuses to guess is worth more than one that finishes.**
+  The pattern only stays trustworthy if lanes are scoped tight enough that
+  &quot;I&#x27;m not sure, here&#x27;s why, I left it alone&quot; is always an acceptable
+  report — not just &quot;issue closed&quot; or &quot;worktree removed.&quot; A storm that
+  optimizes for lanes reporting done, instead of lanes reporting
+  correctly, will eventually mutate something it shouldn&#x27;t have.
+- **Review-before-trust is not optional.** Every subagent report is a
+  submission, not a verified result, regardless of how routine the lane
+  looked going in.
+
+## Worked example (generalized)
 
 Four lanes dispatched together while the orchestrator resolved a live merge
-conflict:
+conflict of its own, across two related repos (a client app and a service
+it depends on):
 
-1. Close CC-Client issues already fixed by merged-but-unlinked branches —
-   verify each fix on `main` before closing, cite the commit.
-2. Close channel-cheevos epic tracking issues whose PRs had merged but
+1. Close issues in the client repo already fixed by merged-but-unlinked
+   branches — verify each fix on the default branch before closing, cite
+   the commit.
+2. Close epic tracking issues in the service repo whose PRs had merged but
    never auto-closed — confirm PR state is `MERGED` and the diff matches
    the issue&#x27;s scope first.
-3. Clean up merged CC-Client worktrees with stray uncommitted lockfile
-   diffs — diff first, discard only confirmed no-op churn, leave anything
-   with real dependency changes in place and flag it.
+3. Clean up merged worktrees in the client repo with stray uncommitted
+   lockfile diffs — diff first, discard only confirmed no-op churn, leave
+   anything with real dependency changes in place and flag it.
 4. Read-only survey of both repos&#x27; open-issue backlogs for the next batch
    of independent, unblocked candidates — no mutations, just a report.
 
 All four ran concurrently; the orchestrator&#x27;s own merge-conflict work
 finished in parallel with them, and every lane&#x27;s report was reviewed before
-being treated as done (lane 3 correctly refused to discard a worktree with
-a real `puppeteer` dependency addition, flagging it back instead of
-guessing).</pre>
+being treated as done. Lane 3 correctly refused to discard a worktree that
+turned out to have a real new dependency added, flagging it back instead of
+guessing — which is the whole pattern working as intended: the storm
+cleared everything that was actually safe to clear, and handed back the one
+thing that wasn&#x27;t.</pre>
     </details>
   </section>
 
