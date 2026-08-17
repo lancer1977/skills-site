@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>secret-apply — Polyhydra Skills</title>
+<meta name="description" content="Generates or accepts one new secret value and applies it everywhere it needs to land — env files, CI secrets, a secrets manager — in a single hands-off pass. Self-issued secrets (DB passwords, keys) g">
+<link rel="stylesheet" href="/assets/style.css">
+</head>
+<body>
+<div class="page">
+
+  <p class="eyebrow"><a href="/">Polyhydra Skills</a> &nbsp;/&nbsp; Homelab Infra</p>
+  <h1>secret-apply</h1>
+  <p class="tagline">Generates or accepts one new secret value and applies it everywhere it needs to land — env files, CI secrets, a secrets manager — in a single hands-off pass. Self-issued secrets (DB passwords, keys) generate non-interactively; provider-issued credentials (PATs, OAuth tokens) are taken once via a GUI or hidden prompt. Never surfaces the value to a transcript, shell history, or process list.</p>
+  <div class="badges"><span class="badge">Homelab Infra</span><span class="badge restricted">Homelab-internal</span></div>
+  <hr class="rule" />
+
+  <section>
+    <h2>When to use it</h2>
+    <ul>
+      <li>A new service needs a credential minted and wired into every place it&#x27;s consumed</li>
+      <li>Rotating an existing secret across env files, CI, and a secrets manager at once</li>
+    </ul>
+  </section>
+
+  <div class="notice">
+    <strong>Homelab-internal.</strong> This skill talks to infrastructure specific to my own
+    self-hosted setup (internal hosts, credentials, deploy topology). The description above
+    reflects the general pattern — the implementation itself isn't published here.
+  </div>
+
+  <footer>
+    Part of the <a href="/">Polyhydra Skills</a> catalog. Requires
+    <a href="https://claude.com/product/claude-code">Claude Code</a>.
+  </footer>
+
+</div>
+</body>
+</html>

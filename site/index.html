@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Polyhydra Skills</title>
+<meta name="description" content="Claude Code skills I actually use, packaged as copy-paste SKILL.md files.">
+<link rel="stylesheet" href="/assets/style.css">
+</head>
+<body>
+<div class="page wide">
+
+  <div class="hero">
+    <p class="eyebrow">skills.polyhydra.app</p>
+    <h1>Polyhydra Skills</h1>
+    <p class="tagline">Claude Code skills I actually use day to day, packaged as copy-paste
+    <code>SKILL.md</code> files. 32 skills, 12 of them homelab-internal
+    (pattern only, no implementation).</p>
+  </div>
+
+  <div class="search-wrap">
+    <input id="search" type="search" placeholder="Search skills…" autocomplete="off">
+    <p class="count" id="count"></p>
+  </div>
+
+    <div class="group">
+      <h2>Agent Workflow</h2>
+      <div class="grid">
+        <a class="skill-card" href="/back-on-the-horse/" data-name="back-on-the-horse" data-desc="recap what happened on a project in roughly the last 24 hours (or a stated window), rendered as a visual card with a light &amp;quot;rough morning, here&amp;#x27;s the highlights&amp;quot; tone, plus a clear list of what&amp;#x27;s still open and what to do next. triggers on &amp;quot;what happened while i was out&amp;quot;, &amp;quot;catch me up&amp;quot;, &amp;quot;back on the horse&amp;quot;, &amp;quot;recap the last 24 hours&amp;quot;, &amp;quot;get back on track&amp;quot;, &amp;quot;morning recap for this project&amp;quot;. not for calendar/personal-schedule briefs — use the morning skill for that.">
+          <div class="name">back-on-the-horse</div>
+          <div class="desc">Recap what happened on a project in roughly the last 24 hours (or a stated window), rendered as a visual card with a light &quot;rough morning, here&#x27;s the highlights&quot; tone, plus a clear list of what&#x27;s still open and what to do next. Triggers on &quot;what happened while I was out&quot;, &quot;catch me up&quot;, &quot;back on the horse&quot;, &quot;recap the last 24 hours&quot;, &quot;get back on track&quot;, &quot;morning recap for this project&quot;. Not for calendar/personal-schedule briefs — use the morning skill for that.</div>
+        </a>
+        <a class="skill-card" href="/delegate/" data-name="delegate" data-desc="route work off the expensive tier -- a codex cli worker, a haiku/sonnet subagent, or local ollama -- instead of running it inline. use for read-only investigation that would flood the transcript (grep sweeps, log trawls, triage) and to dispatch already-specified implementation, on &amp;quot;hand this off&amp;quot;, &amp;quot;give it to codex&amp;quot;, &amp;quot;use a worker&amp;quot;. code changes still need a github issue first -- route through polyhydra-issue-router, this is not a way to implement without one.">
+          <div class="name">delegate</div>
+          <div class="desc">Route work off the expensive tier -- a Codex CLI worker, a Haiku/Sonnet subagent, or local Ollama -- instead of running it inline. Use for read-only investigation that would flood the transcript (grep sweeps, log trawls, triage) and to dispatch already-specified implementation, on &quot;hand this off&quot;, &quot;give it to codex&quot;, &quot;use a worker&quot;. Code changes still need a GitHub issue first -- route through polyhydra-issue-router, this is not a way to implement without one.</div>
+        </a>
+        <a class="skill-card" href="/dont-reinvent-the-wheel/" data-name="dont-reinvent-the-wheel" data-desc="before scaffolding a &amp;quot;new&amp;quot; idea (tool, automation, script), search the user&amp;#x27;s own ecosystem and known external projects for prior art so work is not duplicated. triggers on &amp;quot;new idea&amp;quot;, &amp;quot;what if we built&amp;quot;, &amp;quot;let&amp;#x27;s create a&amp;quot;, &amp;quot;is there something already for this&amp;quot; -- any moment a fresh tool/automation/skill is about to be proposed. not for routine bug fixes or well-scoped features in an already-identified codebase.">
+          <div class="name">dont-reinvent-the-wheel</div>
+          <div class="desc">Before scaffolding a &quot;new&quot; idea (tool, automation, script), search the user&#x27;s own ecosystem and known external projects for prior art so work is not duplicated. Triggers on &quot;new idea&quot;, &quot;what if we built&quot;, &quot;let&#x27;s create a&quot;, &quot;is there something already for this&quot; -- any moment a fresh tool/automation/skill is about to be proposed. Not for routine bug fixes or well-scoped features in an already-identified codebase.</div>
+        </a>
+        <a class="skill-card" href="/elicitation-first/" data-name="elicitation-first" data-desc="use when deciding how to put a choice to the operator, or when a turn is ending for any reason — render real forks as native single-tap pickers, close every handback in selectable options instead of prose, and recognize the cases where asking mid-task is wrong.">
+          <div class="name">elicitation-first</div>
+          <div class="desc">Use when deciding how to put a choice to the operator, or when a turn is ending for any reason — render real forks as native single-tap pickers, close every handback in selectable options instead of prose, and recognize the cases where asking mid-task is wrong.</div>
+        </a>
+        <a class="skill-card" href="/haiku-storm/" data-name="haiku-storm" data-desc="fan out a batch of independent, well-specified housekeeping/recon/mechanical work across several parallel haiku subagents at once instead of working through it serially. use on &amp;quot;haiku storm&amp;quot;, &amp;quot;storm this&amp;quot;, or when there&amp;#x27;s a pile of low-ambiguity work (close stale issues, clean up merged worktrees, survey a backlog, verify-and-report tasks) that splits cleanly into 3-5 independent lanes. not for work that needs judgment, touches files another in-flight task is actively editing, or requires a github issue that doesn&amp;#x27;t exist yet.">
+          <div class="name">haiku-storm</div>
+          <div class="desc">Fan out a batch of independent, well-specified housekeeping/recon/mechanical work across several parallel Haiku subagents at once instead of working through it serially. Use on &quot;haiku storm&quot;, &quot;storm this&quot;, or when there&#x27;s a pile of low-ambiguity work (close stale issues, clean up merged worktrees, survey a backlog, verify-and-report tasks) that splits cleanly into 3-5 independent lanes. Not for work that needs judgment, touches files another in-flight task is actively editing, or requires a GitHub issue that doesn&#x27;t exist yet.</div>
+        </a>
+        <a class="skill-card" href="/handoff/" data-name="handoff" data-desc="split part of the current conversation into a durable handoff file and launch a fresh session seeded with it, so the old thread can close instead of dragging its context forward. triggers on &amp;quot;handoff&amp;quot;, &amp;quot;hand this off to a new thread&amp;quot;, &amp;quot;close this thread and start fresh&amp;quot;, &amp;quot;this thread is getting long&amp;quot;. also use when a new session is pointed at a handoff file, to orient before starting work.">
+          <div class="name">handoff</div>
+          <div class="desc">Split part of the current conversation into a durable handoff file and launch a fresh session seeded with it, so the old thread can close instead of dragging its context forward. Triggers on &quot;handoff&quot;, &quot;hand this off to a new thread&quot;, &quot;close this thread and start fresh&quot;, &quot;this thread is getting long&quot;. Also use when a new session is pointed at a handoff file, to orient before starting work.</div>
+        </a>
+        <a class="skill-card" href="/project-home/" data-name="project-home" data-desc="scaffold or extend a ~/projects/&amp;lt;topic&amp;gt; project-home hub that coordinates multiple ~/code repos around one theme (symlinks + workspace.yaml + worktrees/ + readme + local-work.md), matching the existing stepmania/rpgs convention. use when the user wants to &amp;quot;set up a workspace for x&amp;quot;, &amp;quot;make a project hub for these repos&amp;quot;, &amp;quot;pull related repos together&amp;quot;, or asks to replicate the rpgs/stepmania pattern for another topic.">
+          <div class="name">project-home</div>
+          <div class="desc">Scaffold or extend a ~/projects/&lt;topic&gt; project-home hub that coordinates multiple ~/code repos around one theme (symlinks + workspace.yaml + worktrees/ + README + LOCAL-WORK.md), matching the existing stepmania/rpgs convention. Use when the user wants to &quot;set up a workspace for X&quot;, &quot;make a project hub for these repos&quot;, &quot;pull related repos together&quot;, or asks to replicate the rpgs/stepmania pattern for another topic.</div>
+        </a>
+        <a class="skill-card" href="/projects/" data-name="projects" data-desc="navigate ~/projects -- list hubs with purpose and health, initialize a new hub (single-repo, or multi-repo via project-home), print a briefing block for a new conversation, recommend what to work on next (git-dirty plus pr plus live-session signal), launch a session in a project, capture a stray idea with no home yet, park or activate backlog entries. use for &amp;quot;what should i work on&amp;quot;, &amp;quot;list my projects&amp;quot;, &amp;quot;set me up on x&amp;quot;, &amp;quot;start a session in x&amp;quot;, &amp;quot;new idea&amp;quot;, &amp;quot;jot this down&amp;quot;, &amp;quot;note this idea for later&amp;quot;, or naming a project under ~/projects.">
+          <div class="name">projects</div>
+          <div class="desc">Navigate ~/projects -- list hubs with purpose and health, initialize a new hub (single-repo, or multi-repo via project-home), print a briefing block for a new conversation, recommend what to work on next (git-dirty plus PR plus live-session signal), launch a session in a project, capture a stray idea with no home yet, park or activate backlog entries. Use for &quot;what should I work on&quot;, &quot;list my projects&quot;, &quot;set me up on X&quot;, &quot;start a session in X&quot;, &quot;new idea&quot;, &quot;jot this down&quot;, &quot;note this idea for later&quot;, or naming a project under ~/projects.</div>
+        </a>
+      </div>
+    </div>
+
+    <div class="group">
+      <h2>Content &amp; Art</h2>
+      <div class="grid">
+        <a class="skill-card" href="/codex-art/" data-name="codex-art" data-desc="generate hero or illustration art (not icons or pixel-art sprites) for a product/landing page via codex cli&amp;#x27;s built-in image tool, authenticated through chatgpt login rather than api credits. use when a page needs a hero image or thematic accent art and there is no existing asset to reuse -- e.g. &amp;quot;generate some art for this&amp;quot;, &amp;quot;make a hero image&amp;quot;. not for ui icons, pixel-art game sprites, or photorealistic app screenshots.">
+          <div class="name">codex-art</div>
+          <div class="desc">Generate hero or illustration art (not icons or pixel-art sprites) for a product/landing page via Codex CLI&#x27;s built-in image tool, authenticated through ChatGPT login rather than API credits. Use when a page needs a hero image or thematic accent art and there is no existing asset to reuse -- e.g. &quot;generate some art for this&quot;, &quot;make a hero image&quot;. Not for UI icons, pixel-art game sprites, or photorealistic app screenshots.</div>
+        </a>
+        <a class="skill-card" href="/learning-slides/" data-name="learning-slides" data-desc="mid-chat, draft a quick-learning slide deck (short summary, a few slides, optional images) and push it to the learning-hub display server so it plays on a separate screen -- kiosk device or obs browser source, including live on stream. use when the user wants to quickly learn or explain a topic visually, especially while streaming, or mentions &amp;quot;learning-hub&amp;quot; or &amp;quot;make a slide deck for this&amp;quot;.">
+          <div class="name">learning-slides</div>
+          <div class="desc">Mid-chat, draft a quick-learning slide deck (short summary, a few slides, optional images) and push it to the learning-hub display server so it plays on a separate screen -- kiosk device or OBS Browser Source, including live on stream. Use when the user wants to quickly learn or explain a topic visually, especially while streaming, or mentions &quot;learning-hub&quot; or &quot;make a slide deck for this&quot;.</div>
+        </a>
+        <a class="skill-card" href="/screenscraper-art/" data-name="screenscraper-art" data-desc="safely inspect and stage screenscraper artwork through the local skyscraper client. use when a user wants game art or metadata for a catalog, batocera, or emulation library without exposing credentials or writing directly to a live media library. ported from a codex plugin.">
+          <div class="name">screenscraper-art</div>
+          <div class="desc">Safely inspect and stage ScreenScraper artwork through the local Skyscraper client. Use when a user wants game art or metadata for a catalog, Batocera, or emulation library without exposing credentials or writing directly to a live media library. Ported from a Codex plugin.</div>
+        </a>
+      </div>
+    </div>
+
+    <div class="group">
+      <h2>Dev Tools</h2>
+      <div class="grid">
+        <a class="skill-card" href="/codex-poorman-pr/" data-name="codex-poorman-pr" data-desc="run a fast, local, read-only codex analysis pass over the current changes and return prioritized recommendations before a pull request is ever opened upstream. use during a codex/github review outage or quota gap, and as a routine rapid check before submitting any pr -- advisory only, never a merge gate or a substitute for the real codex review gate.">
+          <div class="name">codex-poorman-pr</div>
+          <div class="desc">Run a fast, local, read-only Codex analysis pass over the current changes and return prioritized recommendations before a pull request is ever opened upstream. Use during a Codex/GitHub review outage or quota gap, and as a routine rapid check before submitting any PR -- advisory only, never a merge gate or a substitute for the real Codex Review Gate.</div>
+        </a>
+        <a class="skill-card" href="/discord-notify/" data-name="discord-notify" data-desc="send the user a discord dm via their private bot (spottieclaw#3956, in the &amp;quot;polyhydra games internal&amp;quot; server) using credentials from ~/.config/secrets/discord.env. use when a long-running task finishes, something needs the user&amp;#x27;s attention and they may not be watching the terminal, or they explicitly ask to be pinged/notified/messaged on discord.">
+          <div class="name">discord-notify</div>
+          <div class="desc">Send the user a Discord DM via their private bot (SpottieClaw#3956, in the &quot;Polyhydra Games Internal&quot; server) using credentials from ~/.config/secrets/discord.env. Use when a long-running task finishes, something needs the user&#x27;s attention and they may not be watching the terminal, or they explicitly ask to be pinged/notified/messaged on Discord.</div>
+        </a>
+        <a class="skill-card restricted" href="/nuget-publish/" data-name="nuget-publish" data-desc="publishes internal .net packages to a private nuget feed so other repos can restore them.">
+          <div class="name">nuget-publish</div>
+          <div class="desc">Publishes internal .NET packages to a private NuGet feed so other repos can restore them.</div>
+        </a>
+        <a class="skill-card" href="/sage-code-index/" data-name="sage-code-index" data-desc="search sage&amp;#x27;s code index before doing an ad-hoc repository sweep. use when asked &amp;quot;find duplicate logic&amp;quot;, &amp;quot;does this pattern exist elsewhere&amp;quot;, &amp;quot;what touches x across my repos&amp;quot;, or whether code should be reused or consolidated across repositories.">
+          <div class="name">sage-code-index</div>
+          <div class="desc">Search Sage&#x27;s code index before doing an ad-hoc repository sweep. Use when asked &quot;find duplicate logic&quot;, &quot;does this pattern exist elsewhere&quot;, &quot;what touches X across my repos&quot;, or whether code should be reused or consolidated across repositories.</div>
+        </a>
+      </div>
+    </div>
+
+    <div class="group">
+      <h2>GitHub &amp; Delivery</h2>
+      <div class="grid">
+        <a class="skill-card" href="/codeburn/" data-name="codeburn" data-desc="launch, monitor, and stop the portfolio burn console, and run an agent-driven portfolio burn — rank every open issue smallest-first, filter out work that is already done, split it into codex worker batches, review the resulting prs, and close verified-complete issues with evidence. use when the user says &amp;quot;start the burn console&amp;quot;, &amp;quot;check burn status&amp;quot;, &amp;quot;stop the burn&amp;quot;, &amp;quot;codeburn">
+          <div class="name">codeburn</div>
+          <div class="desc">Launch, monitor, and stop the portfolio Burn Console, and run an agent-driven portfolio burn — rank every open issue smallest-first, filter out work that is already done, split it into Codex worker batches, review the resulting PRs, and close verified-complete issues with evidence. Use when the user says &quot;start the burn console&quot;, &quot;check burn status&quot;, &quot;stop the burn&quot;, &quot;codeburn</div>
+        </a>
+        <a class="skill-card" href="/mapped-frontier-development/" data-name="mapped-frontier-development" data-desc="plan and execute issue-backed work with mapped-frontier development (mfd), also called stdd. use when a request mentions mfd, mapped-frontier, stdd, phase 0, a build packet, an approval brief, or when a material product, architecture, security, deployment, or operational change needs durable scope and evidence before implementation. ported from a codex plugin — github/issue-based, not tied to any codex-specific tooling.">
+          <div class="name">mapped-frontier-development</div>
+          <div class="desc">Plan and execute issue-backed work with Mapped-Frontier Development (MFD), also called STDD. Use when a request mentions MFD, Mapped-Frontier, STDD, Phase 0, a build packet, an approval brief, or when a material product, architecture, security, deployment, or operational change needs durable scope and evidence before implementation. Ported from a Codex plugin — GitHub/issue-based, not tied to any Codex-specific tooling.</div>
+        </a>
+        <a class="skill-card" href="/quest-log/" data-name="quest-log" data-desc="use when the user wants to see github issue progress rendered as a retro text-adventure screen instead of a status report — single-issue quest screens, a multi-issue &amp;quot;dungeon map&amp;quot; overview to answer &amp;quot;where do i need to focus,&amp;quot; or optional local-llm flavor narration layered over real, deterministic issue data.">
+          <div class="name">quest-log</div>
+          <div class="desc">Use when the user wants to see GitHub issue progress rendered as a retro text-adventure screen instead of a status report — single-issue quest screens, a multi-issue &quot;dungeon map&quot; overview to answer &quot;where do I need to focus,&quot; or optional local-LLM flavor narration layered over real, deterministic issue data.</div>
+        </a>
+        <a class="skill-card" href="/v1-delivery-shaping/" data-name="v1-delivery-shaping" data-desc="define a project&amp;#x27;s lean v1 from a v0 baseline, including inherited half-built work, then create a github-authoritative epic, feature-story, and qa-validation shape. use when a project needs its first coherent release definition; when the user mentions v0, v1, a v1 checklist, validation work under an epic, inherited partial code, or post-v1 stabilization.">
+          <div class="name">v1-delivery-shaping</div>
+          <div class="desc">Define a project&#x27;s lean V1 from a V0 baseline, including inherited half-built work, then create a GitHub-authoritative epic, feature-story, and QA-validation shape. Use when a project needs its first coherent release definition; when the user mentions V0, V1, a V1 checklist, validation work under an epic, inherited partial code, or post-V1 stabilization.</div>
+        </a>
+      </div>
+    </div>
+
+    <div class="group">
+      <h2>Homelab Infra</h2>
+      <div class="grid">
+        <a class="skill-card restricted" href="/batocera-audio/" data-name="batocera-audio" data-desc="checks and switches the active audio output device (hdmi vs. headphone jack) on a batocera retro-gaming console over ssh, and remembers which device actually worked per host.">
+          <div class="name">batocera-audio</div>
+          <div class="desc">Checks and switches the active audio output device (HDMI vs. headphone jack) on a Batocera retro-gaming console over SSH, and remembers which device actually worked per host.</div>
+        </a>
+        <a class="skill-card restricted" href="/cloudflare-dns/" data-name="cloudflare-dns" data-desc="manages dns records for the homelab&amp;#x27;s own domains via the cloudflare api. used to stand up a public hostname for a new self-hosted service, or to check and fix an existing record.">
+          <div class="name">cloudflare-dns</div>
+          <div class="desc">Manages DNS records for the homelab&#x27;s own domains via the Cloudflare API. Used to stand up a public hostname for a new self-hosted service, or to check and fix an existing record.</div>
+        </a>
+        <a class="skill-card restricted" href="/dreadtv-firetv-deploy/" data-name="dreadtv-firetv-deploy" data-desc="sideloads an android tv app build onto fire tv devices on the local network via adb, and checks which known devices are currently reachable and authorized.">
+          <div class="name">dreadtv-firetv-deploy</div>
+          <div class="desc">Sideloads an Android TV app build onto Fire TV devices on the local network via ADB, and checks which known devices are currently reachable and authorized.</div>
+        </a>
+        <a class="skill-card" href="/infisical-lookup/" data-name="infisical-lookup" data-desc="safely discover which infisical project/env/path a secret key lives at, or list what keys exist somewhere -- without ever printing, logging, or writing a secret value. use before adding a sibling secret next to an existing one, or any time you need to know &amp;quot;where does key x live&amp;quot; without already knowing the value.">
+          <div class="name">infisical-lookup</div>
+          <div class="desc">Safely discover which Infisical project/env/path a secret key lives at, or list what keys exist somewhere -- without ever printing, logging, or writing a secret VALUE. Use before adding a sibling secret next to an existing one, or any time you need to know &quot;where does key X live&quot; without already knowing the value.</div>
+        </a>
+        <a class="skill-card restricted" href="/keycloak-admin/" data-name="keycloak-admin" data-desc="manages a self-hosted keycloak identity server — realms, clients, users, and role mappings — through its admin rest api instead of the admin console ui.">
+          <div class="name">keycloak-admin</div>
+          <div class="desc">Manages a self-hosted Keycloak identity server — realms, clients, users, and role mappings — through its Admin REST API instead of the admin console UI.</div>
+        </a>
+        <a class="skill-card restricted" href="/lan-mouse/" data-name="lan-mouse" data-desc="diagnoses and fixes lan-mouse (feschber/lan-mouse) cursor-capture problems on a linux desktop — cursor stuck to a peer, a permission dialog looping, or the daemon fighting for control.">
+          <div class="name">lan-mouse</div>
+          <div class="desc">Diagnoses and fixes lan-mouse (feschber/lan-mouse) cursor-capture problems on a Linux desktop — cursor stuck to a peer, a permission dialog looping, or the daemon fighting for control.</div>
+        </a>
+        <a class="skill-card restricted" href="/r620-deploy/" data-name="r620-deploy" data-desc="end-to-end workflow for shipping a .net service to the homelab&amp;#x27;s docker swarm host: build a real image, register the stack, deploy it, and verify a live tls endpoint rather than just &amp;quot;container is running.&amp;quot;">
+          <div class="name">r620-deploy</div>
+          <div class="desc">End-to-end workflow for shipping a .NET service to the homelab&#x27;s Docker Swarm host: build a real image, register the stack, deploy it, and verify a live TLS endpoint rather than just &quot;container is running.&quot;</div>
+        </a>
+        <a class="skill-card restricted" href="/r620-remote-ops/" data-name="r620-remote-ops" data-desc="operates the homelab&amp;#x27;s docker swarm host safely from a sandboxed session where direct ssh to the lan isn&amp;#x27;t reachable, by going through the container platform&amp;#x27;s https api instead.">
+          <div class="name">r620-remote-ops</div>
+          <div class="desc">Operates the homelab&#x27;s Docker Swarm host safely from a sandboxed session where direct SSH to the LAN isn&#x27;t reachable, by going through the container platform&#x27;s HTTPS API instead.</div>
+        </a>
+        <a class="skill-card restricted" href="/secret-apply/" data-name="secret-apply" data-desc="generates or accepts one new secret value and applies it everywhere it needs to land — env files, ci secrets, a secrets manager — in a single hands-off pass. self-issued secrets (db passwords, keys) generate non-interactively; provider-issued credentials (pats, oauth tokens) are taken once via a gui or hidden prompt. never surfaces the value to a transcript, shell history, or process list.">
+          <div class="name">secret-apply</div>
+          <div class="desc">Generates or accepts one new secret value and applies it everywhere it needs to land — env files, CI secrets, a secrets manager — in a single hands-off pass. Self-issued secrets (DB passwords, keys) generate non-interactively; provider-issued credentials (PATs, OAuth tokens) are taken once via a GUI or hidden prompt. Never surfaces the value to a transcript, shell history, or process list.</div>
+        </a>
+        <a class="skill-card restricted" href="/seq/" data-name="seq" data-desc="queries the homelab&amp;#x27;s centralized structured-log server over its http api.">
+          <div class="name">seq</div>
+          <div class="desc">Queries the homelab&#x27;s centralized structured-log server over its HTTP API.</div>
+        </a>
+        <a class="skill-card restricted" href="/stack-apply/" data-name="stack-apply" data-desc="reconciles a docker swarm stack&amp;#x27;s compose definition against what&amp;#x27;s actually running on the homelab host in one atomic pass — refuses to deploy secret-shaped env literals or a tls router missing its cert resolver, and diffs against live state rather than trusting a possibly-stale git copy.">
+          <div class="name">stack-apply</div>
+          <div class="desc">Reconciles a Docker Swarm stack&#x27;s compose definition against what&#x27;s actually running on the homelab host in one atomic pass — refuses to deploy secret-shaped env literals or a TLS router missing its cert resolver, and diffs against live state rather than trusting a possibly-stale git copy.</div>
+        </a>
+      </div>
+    </div>
+
+    <div class="group">
+      <h2>Personal</h2>
+      <div class="grid">
+        <a class="skill-card" href="/goals/" data-name="goals" data-desc="track and advance real-life goals — house work, errands, decisions, recurring obligations — held as files in ~/code/goals. use when the user asks &amp;quot;what do i need to do&amp;quot;, &amp;quot;where are we on the house stuff&amp;quot;, wants to add or close a goal, wants a status check or a nudge, or mentions a goal by name (gutters, ac, a subscription to cancel). also use when the user describes a new real-world obligation in passing that should not be lost.">
+          <div class="name">goals</div>
+          <div class="desc">Track and advance real-life goals — house work, errands, decisions, recurring obligations — held as files in ~/code/goals. Use when the user asks &quot;what do I need to do&quot;, &quot;where are we on the house stuff&quot;, wants to add or close a goal, wants a status check or a nudge, or mentions a goal by name (gutters, AC, a subscription to cancel). Also use when the user describes a new real-world obligation in passing that should not be lost.</div>
+        </a>
+      </div>
+    </div>
+
+    <div class="group">
+      <h2>Streaming &amp; Media</h2>
+      <div class="grid">
+        <a class="skill-card restricted" href="/twitch-api/" data-name="twitch-api" data-desc="works with the twitch helix api and eventsub for a stream-relay/chatbot and browser-extension project family.">
+          <div class="name">twitch-api</div>
+          <div class="desc">Works with the Twitch Helix API and EventSub for a stream-relay/chatbot and browser-extension project family.</div>
+        </a>
+      </div>
+    </div>
+
+  <footer>
+    Generated from a personal Claude Code skill library. Requires
+    <a href="https://claude.com/product/claude-code">Claude Code</a> to use.
+  </footer>
+
+</div>
+<script>
+(function() {
+  var input = document.getElementById('search');
+  var cards = Array.prototype.slice.call(document.querySelectorAll('.skill-card'));
+  var groups = Array.prototype.slice.call(document.querySelectorAll('.group'));
+  var count = document.getElementById('count');
+  function apply() {
+    var q = input.value.trim().toLowerCase();
+    var shown = 0;
+    cards.forEach(function(c) {
+      var match = !q || c.dataset.name.indexOf(q) !== -1 || c.dataset.desc.indexOf(q) !== -1;
+      c.classList.toggle('hidden', !match);
+      if (match) shown++;
+    });
+    groups.forEach(function(g) {
+      var anyShown = g.querySelectorAll('.skill-card:not(.hidden)').length > 0;
+      g.style.display = anyShown ? '' : 'none';
+    });
+    count.textContent = q ? (shown + ' of 32 skills') : '';
+  }
+  input.addEventListener('input', apply);
+})();
+</script>
+</body>
+</html>

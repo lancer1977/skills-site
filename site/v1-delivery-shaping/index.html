@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>v1-delivery-shaping — Polyhydra Skills</title>
+<meta name="description" content="Define a project&#x27;s lean V1 from a V0 baseline, including inherited half-built work, then create a GitHub-authoritative epic, feature-story, and QA-validation shape. Use when a project needs its first ">
+<link rel="stylesheet" href="/assets/style.css">
+</head>
+<body>
+<div class="page">
+
+  <p class="eyebrow"><a href="/">Polyhydra Skills</a> &nbsp;/&nbsp; GitHub &amp; Delivery</p>
+  <h1>v1-delivery-shaping</h1>
+  <p class="tagline">Define a project&#x27;s lean V1 from a V0 baseline, including inherited half-built work, then create a GitHub-authoritative epic, feature-story, and QA-validation shape. Use when a project needs its first coherent release definition; when the user mentions V0, V1, a V1 checklist, validation work under an epic, inherited partial code, or post-V1 stabilization.</p>
+  <div class="badges"><span class="badge">GitHub &amp; Delivery</span></div>
+  <hr class="rule" />
+
+  <div class="install">
+    <p>Drop this in — save the block below as <code>~/.claude/skills/v1-delivery-shaping/SKILL.md</code>, or run:</p>
+    <pre>mkdir -p ~/.claude/skills/v1-delivery-shaping
+cat &gt; ~/.claude/skills/v1-delivery-shaping/SKILL.md &lt;&lt;'EOF'
+# (paste the full source block below into this file)
+EOF</pre>
+  </div>
+
+  <section>
+    <h2>Full source</h2>
+    <details>
+      <summary>SKILL.md — copy everything inside</summary>
+      <pre># V1 Delivery Shaping
+
+Treat every project as V0 until its V1 definition is explicitly recorded. V0
+may contain working, partial, stale, experimental, or contradictory code; it is
+an inventory state, not a release claim.
+
+## Shape V1
+
+1. Refresh the project&#x27;s live GitHub issue/PR state and inspect the current
+   codebase enough to identify working and half-built paths.
+2. Define V1 as the smallest coherent, useful outcome for a named user and
+   supported environment. State its non-goals and release boundary.
+3. Classify inherited partial work:
+   - retain in V1 when it directly supports the coherent outcome;
+   - reshape when its user value is still sound but its boundary is wrong;
+   - defer or retire when it is incoherent, unsafe, duplicate, or unrelated.
+   Do not force all existing code into V1 merely because it already exists.
+4. Record the V1 definition in the main epic. Create bounded feature stories
+   directly under that epic and one linked **V1 Test Checklist / QA and
+   Validation** task.
+5. Give each feature story a compact checklist with source acceptance, exact
+   head validation/review, and a declared quality-gate plan. Require unit tests
+   for deterministic logic, integration tests at changed boundaries, automated
+   execution where practical, and screenshot evidence for UI work.
+
+## Execute V1
+
+- Complete a feature story when its scoped source acceptance, required checks,
+  review, and quality gates pass. Do not keep its source PR open solely for
+  later environment-bound QA evidence.
+- For a website or app story, capture the intended user journey at each
+  supported viewport, platform, or device state named by the story. Attach
+  privacy-safe result images to the PR or QA record, then have AI compare them
+  with the acceptance criteria, approved design, or prior baseline. Turn every
+  concrete gap into a severity decision or linked issue; AI comparison informs
+  the decision but does not replace functional proof, human product judgment,
+  accessibility validation, or release authority.
+- Update the QA task with exact commit/version, environment, date, result, and
+  an evidence link or precise blocker.
+- Keep release readiness separate from source delivery. Never call a merged PR
+  a deployment or treat local tests as live proof.
+- Repair P0/P1 findings before the affected merge or release when they
+  invalidate promised behavior. Create linked follow-up stories for P2 and
+  lower findings unless the user explicitly keeps them in the active PR.
+- Preserve normal authority boundaries: do not merge, deploy, release, close
+  issues, or change credentials without the required authorization and proof.
+
+## V1 Definition Template
+
+```markdown
+## V1 Definition
+
+### Coherent outcome
+&lt;Who can do what, in which supported environment?&gt;
+
+### In scope
+- &lt;existing capability to retain&gt;
+- &lt;bounded feature story&gt;
+
+### Explicitly out of scope
+- &lt;deferred, retired, or later-version work&gt;
+
+### Inherited V0 work
+| Existing code or issue | Keep, reshape, defer, or retire | Reason |
+| --- | --- | --- |
+
+### Delivery shape
+- Feature stories: #&lt;issue&gt;, #&lt;issue&gt;
+- QA and Validation task: #&lt;issue&gt;
+- Release boundary: &lt;what evidence makes V1 release-ready&gt;
+
+### Quality gates
+- Unit tests: &lt;deterministic behavior covered&gt;
+- Integration tests: &lt;changed boundary covered&gt;
+- Automation: &lt;CI or repeatable local command&gt;
+- Visual proof: &lt;required views, reference, and screenshot locations&gt;
+```
+
+## After V1
+
+Move the completed project into stabilization by default: prefer defects,
+regression coverage, migration safety, observability, compatibility,
+performance, and documented operations. Admit new feature scope only with an
+explicit product reason and a new bounded story. Plan validation and rollback
+before changes that touch persistence, authentication, deployment,
+infrastructure, or external integrations.</pre>
+    </details>
+  </section>
+
+  <footer>
+    Part of the <a href="/">Polyhydra Skills</a> catalog. Requires
+    <a href="https://claude.com/product/claude-code">Claude Code</a>.
+  </footer>
+
+</div>
+</body>
+</html>

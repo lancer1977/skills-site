@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>codex-art — Polyhydra Skills</title>
+<meta name="description" content="Generate hero or illustration art (not icons or pixel-art sprites) for a product/landing page via Codex CLI&#x27;s built-in image tool, authenticated through ChatGPT login rather than API credits. Use when">
+<link rel="stylesheet" href="/assets/style.css">
+</head>
+<body>
+<div class="page">
+
+  <p class="eyebrow"><a href="/">Polyhydra Skills</a> &nbsp;/&nbsp; Content &amp; Art</p>
+  <h1>codex-art</h1>
+  <p class="tagline">Generate hero or illustration art (not icons or pixel-art sprites) for a product/landing page via Codex CLI&#x27;s built-in image tool, authenticated through ChatGPT login rather than API credits. Use when a page needs a hero image or thematic accent art and there is no existing asset to reuse -- e.g. &quot;generate some art for this&quot;, &quot;make a hero image&quot;. Not for UI icons, pixel-art game sprites, or photorealistic app screenshots.</p>
+  <div class="badges"><span class="badge">Content &amp; Art</span></div>
+  <hr class="rule" />
+
+  <div class="install">
+    <p>Drop this in — save the block below as <code>~/.claude/skills/codex-art/SKILL.md</code>, or run:</p>
+    <pre>mkdir -p ~/.claude/skills/codex-art
+cat &gt; ~/.claude/skills/codex-art/SKILL.md &lt;&lt;'EOF'
+# (paste the full source block below into this file)
+EOF</pre>
+  </div>
+
+  <section>
+    <h2>Full source</h2>
+    <details>
+      <summary>SKILL.md — copy everything inside</summary>
+      <pre># Codex Art
+
+## Capability
+
+Codex CLI (`codex`) has a built-in image generation tool available to the agent when run non-interactively via `codex exec`. It&#x27;s authenticated through `codex login` (ChatGPT), not the `OPENAI_API_KEY` route — those are two separate credentials with separate billing, and the API-key route is not reliably configured in most environments. Check `codex login status` if you&#x27;re unsure; it should say &quot;Logged in using ChatGPT.&quot;
+
+This skill turns that raw capability into a repeatable workflow: generate one or more coherent images, validate what actually came back, and integrate the result into a real project without leaving orphaned test files behind.
+
+## Before generating: check for prior art
+
+Don&#x27;t reach for this skill reflexively. If the page already has usable art (see `visual-asset-inventory` for how to audit that), or if what&#x27;s needed is small UI iconography rather than a hero/illustration image, this is the wrong tool — icon/pixel-art sprite generation is out of scope for this skill.
+
+## Step 1: Establish the style brief once
+
+If you&#x27;re generating more than one image for the same page or product, write a short **style brief** first — palette (pull actual hex values from the page&#x27;s CSS `:root` variables if it&#x27;s a web page), medium (e.g. &quot;painterly digital fantasy art, not photorealistic, not cartoonish&quot;), mood, and anything explicitly forbidden (readable text, logos, specific real people). Reuse this brief verbatim across every image prompt in the set. This is what makes a hero image and two accent images look like they belong to the same page instead of three unrelated stock photos.
+
+Read the actual page/CSS before writing the brief — don&#x27;t guess at the palette.
+
+## Step 2: Generate
+
+Batch everything into as few `codex exec` invocations as reasonably possible — each invocation is a real ChatGPT-account usage cost, and running the agent loop once for 2-3 images is cheaper and faster than one process per image. A single invocation can generate multiple images in sequence if you list them all in the prompt.
+
+Working invocation pattern:
+
+```sh
+codex exec \
+  -C /path/to/repo \
+  -s workspace-write \
+  --skip-git-repo-check \
+  &quot;Using your built-in image generation tool, generate &lt;N&gt; illustrations and save them under &lt;target-dir&gt;/.
+
+&lt;style brief — palette, medium, mood, constraints&gt;
+
+1. &lt;path-1&gt; — &lt;size, e.g. 1536x1024&gt; — &lt;scene/subject for image 1&gt;
+2. &lt;path-2&gt; — &lt;size, e.g. 1024x1024&gt; — &lt;scene/subject for image 2&gt;
+
+After generating, run &#x27;file&#x27; on each output and print the results so dimensions and format can be confirmed.&quot;
+```
+
+Notes on the flags:
+- `-s workspace-write` and `--skip-git-repo-check` are needed if the target directory isn&#x27;t (yet) a trusted git repo Codex already has write access to.
+- `-C &lt;repo&gt;` scopes the sandbox to the project directory — don&#x27;t generate into `/tmp` and copy over manually, let Codex write directly into the target path in the same call, since Codex has to `cp` from its own `~/.codex/generated_images/&lt;session&gt;/...` output anyway and can do that copy itself.
+- Ask Codex to print `file` output on the results in the same call — that&#x27;s your first, cheapest validation signal (real PNG, expected dimensions) without spending a second turn on it.
+
+**Run it in the foreground, not backgrounded.** A `codex exec` image-generation call typically takes 2-3 minutes — long, but bounded. Resist backgrounding it: if the calling agent has no `run_in_background`-style notification wired up for plain Bash calls (most don&#x27;t — that mechanism is usually reserved for other tool types), a backgrounded call leaves the agent with nothing to wait on, and it&#x27;s easy to burn the rest of the turn budget looping or guessing instead of just letting the foreground command return. Just run it and let it block; that&#x27;s the correct amount of waiting.
+
+If it must run in the background for some reason (parallelizing several unrelated images across separate calls), poll by checking whether the target file actually exists on disk — don&#x27;t wait on a generic completion signal that may not fire for raw shell commands.
+
+If Codex reports it does not have a built-in image tool in that session (rare, but possible depending on account/session state), stop and say so plainly rather than falling back to the `OPENAI_API_KEY` route silently — that route has historically been an invalid/expired credential in this environment and will just burn a turn on a 401.
+
+## Step 3: Actually look at the result
+
+A `file` check confirming &quot;PNG, correct dimensions&quot; is necessary but not sufficient — it tells you Codex produced *a* valid image, not a *good* one. Use the Read tool to view every generated image yourself before treating the task as done. Things `file` can&#x27;t catch: wrong mood, readable gibberish text rendered into the scene, a subject that doesn&#x27;t read as fantasy or reads as generic stock art, a composition that won&#x27;t crop well into the target UI slot.
+
+If it&#x27;s a multi-image set, check that they actually look like they belong together (consistent palette/lighting), not just that each one individually is fine.
+
+Show the result to the user before generating variations or moving on to integration — don&#x27;t burn another generation pass on a hunch that they&#x27;ll want something different. If something&#x27;s off, regenerate the one specific image with a corrected prompt rather than the whole set.
+
+## Step 4: Integrate, then clean up
+
+- Copy (don&#x27;t leave the raw `~/.codex/generated_images/...` files as the source of truth) into the project&#x27;s real asset location — e.g. `site/assets/`, `public/`, wherever the project already keeps images.
+- Wire it into the actual markup/CSS (`&lt;img&gt;` tag, CSS `background-image`, whatever the page needs) rather than just dropping the file and calling it done.
+- Delete any throwaway test/preview images generated along the way (e.g. a `hero-test.png` used to validate the style before committing to the full set) — rename the keeper to its real filename instead of leaving both around.
+- If the images are large (a single generated PNG commonly lands in the 1-2MB range), and the deployment target uses something with a small payload ceiling — Docker Swarm `configs` cap at 500KB, some CDNs have similar limits — don&#x27;t discover that at deploy time. Check the target&#x27;s constraints before deploy and use a bind-mounted volume or object storage instead of a size-limited config/secret mechanism if needed.
+
+## What this skill does not cover
+
+- Real product screenshots — those require an actually running app (see the `run` skill) and a screenshot tool, not generated art.
+- Small UI icons / pixel-art sprites — out of scope for this skill.
+- Image editing/compositing of existing assets — this is generation only.
+&lt;/content&gt;
+&lt;/invoke&gt;</pre>
+    </details>
+  </section>
+
+  <footer>
+    Part of the <a href="/">Polyhydra Skills</a> catalog. Requires
+    <a href="https://claude.com/product/claude-code">Claude Code</a>.
+  </footer>
+
+</div>
+</body>
+</html>

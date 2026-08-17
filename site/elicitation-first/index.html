@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>elicitation-first — Polyhydra Skills</title>
+<meta name="description" content="Use when deciding how to put a choice to the operator, or when a turn is ending for any reason — render real forks as native single-tap pickers, close every handback in selectable options instead of p">
+<link rel="stylesheet" href="/assets/style.css">
+</head>
+<body>
+<div class="page">
+
+  <p class="eyebrow"><a href="/">Polyhydra Skills</a> &nbsp;/&nbsp; Agent Workflow</p>
+  <h1>elicitation-first</h1>
+  <p class="tagline">Use when deciding how to put a choice to the operator, or when a turn is ending for any reason — render real forks as native single-tap pickers, close every handback in selectable options instead of prose, and recognize the cases where asking mid-task is wrong.</p>
+  <div class="badges"><span class="badge">Agent Workflow</span></div>
+  <hr class="rule" />
+
+  <div class="install">
+    <p>Drop this in — save the block below as <code>~/.claude/skills/elicitation-first/SKILL.md</code>, or run:</p>
+    <pre>mkdir -p ~/.claude/skills/elicitation-first
+cat &gt; ~/.claude/skills/elicitation-first/SKILL.md &lt;&lt;'EOF'
+# (paste the full source block below into this file)
+EOF</pre>
+  </div>
+
+  <section>
+    <h2>Full source</h2>
+    <details>
+      <summary>SKILL.md — copy everything inside</summary>
+      <pre># Elicitation First
+
+## Overview
+
+This skill assumes you already know CLAUDE.md&#x27;s MAID section — the core
+interruption-cost-not-decision-weight rule, when to skip the picker, picker
+shape (recommended option, batching, describe what an option *causes*), and
+&quot;a picker is not approval.&quot; It does not re-derive any of that. What follows
+is the operational layer MAID doesn&#x27;t cover: how to render a choice on the
+specific host you&#x27;re on, the named failure modes to catch yourself making,
+and the exact shape a handback has to end in.
+
+## When to Use
+
+Use this skill whenever a turn is about to end — with a question, a decision
+point, or nothing more to say. It covers two situations, and the second
+applies every time, including when the task is fully specified and nothing
+is left to decide:
+
+**A checkpoint mid-task**, whenever work reaches a fork the operator would
+plausibly want to steer:
+
+- two or more materially different approaches remain open
+- scope, naming, ordering, or placement is genuinely ambiguous
+- operator preference would beat an agent guess
+- the next action crosses a protected boundary
+
+**Any handback**, unconditionally — a status summary, a progress report, or a
+finished task. See &quot;Every handback ends in selectable options&quot; below; do not
+skip it because the work is complete or nothing remains to decide.
+
+For when *not* to elicit mid-task, see CLAUDE.md&#x27;s MAID section (&quot;Cheap is
+not free&quot;). Those exclusions govern a mid-task *checkpoint*, never a
+handback — a fully specified, already-decided task still ends with a picker
+when it&#x27;s done.
+
+## Rendering order
+
+Pick the cheapest rendering the surface supports.
+
+| Rank | Rendering | Operator cost | Use |
+| --- | --- | --- | --- |
+| 1 | Host&#x27;s native picker | One tap, no keyboard | Default for every real fork |
+| 2 | Lettered **A**/**B**/**C** text | A typed reply | Where no picker exists: only at an impasse mid-task, or for any handback |
+| 3 | Rich interactive widget | A typed reply plus custom affordances | Rare |
+
+A native picker is any host-provided control that presents options the operator
+answers by selection rather than typing. Discover the host&#x27;s own tool and its
+limits before composing a question; do not assume another host&#x27;s tool name,
+question count, option count, or availability. Two examples, current at the time
+of writing and subject to change:
+
+- **Claude Code** — `AskUserQuestion`. One to four questions, two to four
+  options each, single- or multi-select, with an &quot;Other&quot; escape hatch supplied
+  automatically.
+- **Codex** — `request_user_input`. At most three questions with two or three
+  choices each, available only in Plan mode.
+
+If the host exposes no such control, drop to rank 2. Never invoke a picker tool
+by name without confirming the current host provides it.
+
+Rank 3 deserves its own warning. A custom widget reintroduces the keyboard cost
+the native picker removes and rebuilds affordances the host already provides.
+Importance is not a reason to reach for it. Reach for it only when the decision
+genuinely needs a visual neither the picker nor prose can express, such as
+comparing rendered layouts.
+
+## Anti-patterns
+
+Each of these is a way of appearing to elicit without offering a decision.
+
+- **The permission gate.** Options that amount to an action and its absence,
+  offered as a rubber stamp for work already decided and under way. This is
+  `Done — continue` wearing a new control. If inaction is not a real candidate,
+  act. This is not a handback offering one genuine, undecided follow-up
+  alongside stopping — that is a real fork about whether new work happens next,
+  not permission for work already in motion; see the handback section below.
+- **The prose question.** Ending a turn with a question the operator has to
+  answer by typing, on a surface where a picker was available.
+- **The research substitute.** Asking what the repository already answers.
+- **The false fork.** Offering options when one is obviously correct. Choose it,
+  say you chose it, and continue.
+- **The re-ask.** Re-eliciting a decision already made in this session.
+- **The reassurance check.** Interrupting because confirmation would feel good.
+  The test is whether a fork exists, never whether it would feel safer to ask.
+
+## Beyond the standard picker shape
+
+CLAUDE.md&#x27;s MAID section covers the standard shape (recommended option
+labelled, describe consequences, batch up to the host&#x27;s limit). Two things it
+doesn&#x27;t cover:
+
+- Keep options mutually exclusive unless the question is explicitly
+  multi-select.
+- Make the question answerable without scrolling back through the transcript.
+- Never exceed the limit the active picker actually advertises — batching is a
+  way to spend one interruption instead of several, not a licence to construct
+  a request the host will reject.
+
+## Every handback ends in selectable options
+
+Everything above decides *when* to interrupt. This decides the *form* of every
+return of control, which is a separate question — and it&#x27;s the one case the
+impasse restriction in Rendering order does not apply to: a handback always
+ends in options, lettered when no native picker is available.
+
+- When the work is complete and exactly one optional follow-up remains, offer
+  it alongside stopping. That two-choice picker is **not** the permission-gate
+  anti-pattern above: the operator is deciding whether new, undecided work
+  happens next, not rubber-stamping work already in motion.
+- With two or more follow-ups, say the work is done plainly and offer them,
+  with stopping among them, capped at the host&#x27;s own maximum (same cap as
+  &quot;Beyond the standard picker shape&quot; above). Prioritize the follow-ups that
+  matter most rather than exceed it; do not construct a request the host will
+  reject.
+- When no second genuine option exists — complete, blocked, or action-needed —
+  do not fabricate one. State the actual status plainly and stop; a
+  placeholder option is the same failure as a permission gate, just wearing
+  the rule&#x27;s shape. Do not report completion when the work is blocked: say
+  what is actually true.
+- This does not apply to a machine-readable output constrained by an external
+  schema or contract — a gate verdict, an API response, any payload another
+  program parses. Selectable options belong in what the operator reads, not in
+  a schema a strict consumer will reject for an unexpected field.
+
+The failure this prevents: during a long autonomous run the handback degrades
+into a wall of prose, satisfying &quot;interrupt only at real forks&quot; while leaving
+the operator nothing to act on.
+
+## Expected Output
+
+- a decision on whether a real fork exists
+- the chosen rendering and why the cheaper one was unavailable, if it was
+- options that name consequences, with a labelled recommendation
+- for anti-pattern cases, the action taken instead of the question asked
+- a handback that ends in selectable next steps</pre>
+    </details>
+  </section>
+
+  <footer>
+    Part of the <a href="/">Polyhydra Skills</a> catalog. Requires
+    <a href="https://claude.com/product/claude-code">Claude Code</a>.
+  </footer>
+
+</div>
+</body>
+</html>

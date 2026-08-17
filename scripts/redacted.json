@@ -1,0 +1,90 @@
+{
+  "cloudflare-dns": {
+    "description": "Manages DNS records for the homelab's own domains via the Cloudflare API. Used to stand up a public hostname for a new self-hosted service, or to check and fix an existing record.",
+    "when": [
+      "Adding DNS for a service that just went live on the homelab",
+      "Checking whether a hostname's record already exists before creating a duplicate",
+      "Verifying a record actually propagated and the TLS proxy picked it up"
+    ]
+  },
+  "r620-deploy": {
+    "description": "End-to-end workflow for shipping a .NET service to the homelab's Docker Swarm host: build a real image, register the stack, deploy it, and verify a live TLS endpoint rather than just \"container is running.\"",
+    "when": [
+      "Standing up a brand-new homelab service for the first time",
+      "Redeploying an existing service after a code change",
+      "Chasing down why a deploy looks fine but is silently serving stale data or the wrong TLS cert"
+    ]
+  },
+  "r620-remote-ops": {
+    "description": "Operates the homelab's Docker Swarm host safely from a sandboxed session where direct SSH to the LAN isn't reachable, by going through the container platform's HTTPS API instead.",
+    "when": [
+      "A background/sandboxed session needs to read service state but the LAN IP is blocked",
+      "A low-risk service operation (restart, one-shot exec) needs to happen without a foreground session"
+    ]
+  },
+  "keycloak-admin": {
+    "description": "Manages a self-hosted Keycloak identity server — realms, clients, users, and role mappings — through its Admin REST API instead of the admin console UI.",
+    "when": [
+      "A new app needs an OIDC client registered for login",
+      "Inspecting or fixing realm config, users, or role assignments"
+    ]
+  },
+  "seq": {
+    "description": "Queries the homelab's centralized structured-log server over its HTTP API.",
+    "when": [
+      "Checking application logs for a specific service or error",
+      "Verifying a newly deployed service is actually emitting logs",
+      "Debugging a production issue without SSHing in to grep raw files"
+    ]
+  },
+  "stack-apply": {
+    "description": "Reconciles a Docker Swarm stack's compose definition against what's actually running on the homelab host in one atomic pass — refuses to deploy secret-shaped env literals or a TLS router missing its cert resolver, and diffs against live state rather than trusting a possibly-stale git copy.",
+    "when": [
+      "Pushing a compose.yml change to an existing self-hosted stack",
+      "Anything beyond piecemeal, hand-edited service updates"
+    ]
+  },
+  "secret-apply": {
+    "description": "Generates or accepts one new secret value and applies it everywhere it needs to land — env files, CI secrets, a secrets manager — in a single hands-off pass. Self-issued secrets (DB passwords, keys) generate non-interactively; provider-issued credentials (PATs, OAuth tokens) are taken once via a GUI or hidden prompt. Never surfaces the value to a transcript, shell history, or process list.",
+    "when": [
+      "A new service needs a credential minted and wired into every place it's consumed",
+      "Rotating an existing secret across env files, CI, and a secrets manager at once"
+    ]
+  },
+  "twitch-api": {
+    "description": "Works with the Twitch Helix API and EventSub for a stream-relay/chatbot and browser-extension project family.",
+    "when": [
+      "Calling Twitch Helix endpoints directly",
+      "Debugging a relay service's OAuth/chat connection",
+      "Working on the Twitch extension itself"
+    ]
+  },
+  "dreadtv-firetv-deploy": {
+    "description": "Sideloads an Android TV app build onto Fire TV devices on the local network via ADB, and checks which known devices are currently reachable and authorized.",
+    "when": [
+      "A new build needs pushing to test devices",
+      "Checking which Fire TVs on the LAN are ready to receive a build"
+    ]
+  },
+  "batocera-audio": {
+    "description": "Checks and switches the active audio output device (HDMI vs. headphone jack) on a Batocera retro-gaming console over SSH, and remembers which device actually worked per host.",
+    "when": [
+      "Audio cut out after a cable swap",
+      "A quick status check before assuming a controller/audio problem is hardware"
+    ]
+  },
+  "lan-mouse": {
+    "description": "Diagnoses and fixes lan-mouse (feschber/lan-mouse) cursor-capture problems on a Linux desktop — cursor stuck to a peer, a permission dialog looping, or the daemon fighting for control.",
+    "when": [
+      "LanMouse cursor capture misbehaves and the fix isn't obvious",
+      "Instead of re-deriving the same diagnosis from scratch each time"
+    ]
+  },
+  "nuget-publish": {
+    "description": "Publishes internal .NET packages to a private NuGet feed so other repos can restore them.",
+    "when": [
+      "A library needs to be versioned and pushed for other repos to consume",
+      "Diagnosing a \"package not found\" or restore failure against the internal feed"
+    ]
+  }
+}

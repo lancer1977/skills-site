@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>delegate — Polyhydra Skills</title>
+<meta name="description" content="Route work off the expensive tier -- a Codex CLI worker, a Haiku/Sonnet subagent, or local Ollama -- instead of running it inline. Use for read-only investigation that would flood the transcript (grep">
+<link rel="stylesheet" href="/assets/style.css">
+</head>
+<body>
+<div class="page">
+
+  <p class="eyebrow"><a href="/">Polyhydra Skills</a> &nbsp;/&nbsp; Agent Workflow</p>
+  <h1>delegate</h1>
+  <p class="tagline">Route work off the expensive tier -- a Codex CLI worker, a Haiku/Sonnet subagent, or local Ollama -- instead of running it inline. Use for read-only investigation that would flood the transcript (grep sweeps, log trawls, triage) and to dispatch already-specified implementation, on &quot;hand this off&quot;, &quot;give it to codex&quot;, &quot;use a worker&quot;. Code changes still need a GitHub issue first -- route through polyhydra-issue-router, this is not a way to implement without one.</p>
+  <div class="badges"><span class="badge">Agent Workflow</span></div>
+  <hr class="rule" />
+
+  <div class="install">
+    <p>Drop this in — save the block below as <code>~/.claude/skills/delegate/SKILL.md</code>, or run:</p>
+    <pre>mkdir -p ~/.claude/skills/delegate
+cat &gt; ~/.claude/skills/delegate/SKILL.md &lt;&lt;'EOF'
+# (paste the full source block below into this file)
+EOF</pre>
+  </div>
+
+  <section>
+    <h2>Full source</h2>
+    <details>
+      <summary>SKILL.md — copy everything inside</summary>
+      <pre># Delegate — get work off the expensive tier
+
+The in-session trigger for the
+[model-tier delivery loop](../../docs/workflows/model-tier-delivery-loop.md).
+That doc defines the tiers; this skill is what makes them get *used* during an
+ordinary session instead of only inside a codeburn run.
+
+Role→tool bindings are canonical in
+[`config/agent-roles.yaml`](../../config/agent-roles.yaml)
+(`python tools/agent_roles.py &lt;role&gt;`).
+
+**Related, not duplicate:** `skills/polyhydra-issue-router` covers the
+*issue-first* path — start from a GitHub issue, classify it, split cheap prep
+from Codex implementation, produce a handoff. This skill covers the
+*session-first* path: work is already in front of you and the question is
+which tier should carry it.
+
+**Session-first is a routing decision, not a way around the issue.**
+[`AGENTS.md`](../../AGENTS.md) requires a GitHub issue for any new slice,
+backlog item, or follow-up, and that rule outranks this skill. So:
+
+- **Read-only investigation** — recon, grep sweeps, log trawls, &quot;how does X
+  work&quot;, reviewing a diff — route freely from a live conversation. No issue
+  needed; nothing is being changed.
+- **Anything code-changing** — create or identify the issue first, then route
+  the implementation through `polyhydra-issue-router`. Come back here only to
+  dispatch work that already has one, and give the worker its own issue-linked
+  worktree lease.
+
+Reaching for this skill *because* no issue exists is the misuse it has to
+refuse. Convenience is exactly the pressure the issue-first rule exists to
+resist.
+
+## The one discriminator
+
+**Match the tier to ambiguity, not to task size.**
+
+A big job with a crisp definition of done is cheap work. A three-line change
+where &quot;correct&quot; is still being negotiated is expensive work. Size is a trap —
+routing by it is how a 40-file mechanical rename eats frontier tokens while a
+subtle auth decision gets handed to a worker.
+
+## The lanes
+
+| Lane | Dispatch | Takes | Does not take |
+| --- | --- | --- | --- |
+| **Codex worker** (Muscle) | `skills/delegate/scripts/delegate-codex.sh` | Well-specified implementation: write the code, run the tests, iterate. A contractor working a ticket. | Anything where the spec is still being argued. |
+| **Haiku subagent** (cheap Claude) | `Agent(subagent_type:&quot;Explore&quot;\|&quot;general-purpose&quot;, model:&quot;haiku&quot;)` | High-volume, low-ambiguity reading: grep sweeps, log trawls, &quot;which files touch X&quot;, first-pass triage. | Judgment calls, security review, final verdicts. |
+| **Sonnet subagent** (mid Claude) | `Agent(..., model:&quot;sonnet&quot;)` | Bounded reasoning that produces a *written conclusion* — a focused investigation, a triage write-up, a recommendation. | Writing code. Implementation is Terra&#x27;s lane per `AGENTS.md`; send refactors to the Codex worker. |
+| **Local Ollama** (Support) | [Ollama code agents](../../docs/features/ollama-code-agents/architecture.md) | Bulk text crunch on the homelab GPUs; condensing verbose output before it reaches the frontier tier. | Anything private or unsanitized — the [Local AI Fabric contracts](../../docs/features/local-ai-capability-fabric/contracts.md) fail closed. |
+| **Stay on the frontier tier** (Brain) | — | Defining what &quot;done&quot; means, judging whether it was met, security and architecture, reviewing a worker&#x27;s diff. | Volume. |
+
+The two Claude lanes are the tiers the delivery loop originally lacked: it
+jumped straight from Codex to local Ollama, leaving nothing between the
+frontier model and the homelab GPUs.
+
+## Offer, don&#x27;t silently absorb
+
+When work in front of you fits a lane above, **put it to the operator as a
+picker before starting** — this is exactly a &quot;which direction&quot; moment under
+the [collaboration contract](../../docs/experience/collaboration-contract.md).
+One tap, no typing:
+
+- *Hand to a Codex worker (background)* — say what it will do and that it returns a log path
+- *Cheap Haiku subagent* — for search/summarize fan-out
+- *Keep it on the frontier tier* — when the expensive attention is the point
+
+Lead with the recommended lane, label it `(Recommended)`, and say what each
+option **causes** (cost, latency, who reviews the result), not what it is.
+
+Two exceptions where you act instead of asking:
+
+- Noisy investigation you were going to run anyway (grep sweeps, log trawls) —
+  spawn the cheap subagent and keep only the findings. Asking wastes a tap.
+- The operator already chose a lane earlier in the session. Don&#x27;t re-ask.
+
+## Dispatching a Codex worker
+
+Implementation work, which needs its own tree and an issue:
+
+```bash
+skills/delegate/scripts/delegate-codex.sh -C /path/to/repo \
+  -W &lt;branch&gt; --issue-url https://github.com/&lt;owner&gt;/&lt;repo&gt;/issues/&lt;n&gt; \
+  &quot;Implement &lt;spec&gt;. Run &lt;test command&gt; until green. Small reviewable diff.&quot;
+```
+
+Recon, which needs neither:
+
+```bash
+skills/delegate/scripts/delegate-codex.sh -C /path/to/repo -s read-only \
+  &quot;Summarise how &lt;subsystem&gt; handles &lt;case&gt;. Cite file:line. No changes.&quot;
+```
+
+Do not copy the first form without `-W`: a writable dispatch straight at a
+repository is refused, by design. The worker gets a tree of its own or it does
+not run.
+
+Backgrounds by default and returns a log path immediately. Flags: `-s read-only`
+(recon), `--no-net`, `-m MODEL`, `-w` (foreground/stream), `-f prompt.md`,
+`-n NAME` (log label), `--check` (auth preflight), `-W BRANCH` with
+`--issue-url` (create and lease the worker&#x27;s own worktree),
+`--allow-shared-tree` (deliberate override, see below). Logs, the last
+message, and a copy of the prompt land in `~/.claude/logs/delegate/`, under a
+per-invocation stem so concurrent workers cannot overwrite each other.
+
+Two defaults are enforced by the script rather than left to the operator&#x27;s
+ambient Codex config, because inheriting them silently defeats the point:
+
+- **`gpt-5.6-terra` on `service_tier=&quot;default&quot;`.** Ordinary delegated work is
+  Terra on the default tier per [`AGENTS.md`](../../AGENTS.md); inheriting a
+  config set to Sol or a premium tier would put mechanical work on the
+  expensive lane this skill exists to avoid. `-m` still overrides.
+- **Writable dispatch into any pre-existing git worktree is refused** — primary
+  or linked, yours or another session&#x27;s. The dispatcher cannot tell whether a
+  tree it did not create is idle or actively owned, and racing a live session
+  is how uncommitted work gets destroyed. Documenting this in prose is not
+  enough; the default path has to enforce it.
+
+  The safe path is first-class, so it is also the easy one:
+
+  ```bash
+  delegate-codex.sh -C &lt;repo&gt; -W &lt;branch&gt; --issue-url &lt;issue&gt; &quot;&lt;prompt&gt;&quot;
+  ```
+
+  That creates `&lt;repo&gt;/.worktrees/&lt;branch&gt;` from `--base` (default
+  `origin/main`), registers the worktree lease, and dispatches the worker
+  there. `--issue-url` is required because code-changing delegation is
+  issue-backed; it must be an exact GitHub *issue* URL, since the lease
+  registry rejects pull-request URLs.
+
+  Escape hatches: `-s read-only` for recon against any tree, or
+  `--allow-shared-tree` when you know a tree is idle.
+
+  Detection compares the worktree&#x27;s git dir against the common git dir rather
+  than looking for `/worktrees/` in the path — a primary checkout that merely
+  *lives* under a directory of that name (`~/worktrees/&lt;repo&gt;`) would otherwise
+  slip past. A standalone scratch clone **is** a primary checkout as far as git
+  is concerned. And when git cannot be inspected at all (dubious ownership),
+  writable dispatch fails closed rather than assuming there is no repository.
+
+Verified against `codex-cli` 0.145.0, where `codex exec` is non-interactive by
+default (there is no `--ask-for-approval` flag on the subcommand) and needs
+`--skip-git-repo-check` outside a repo. The script handles both.
+
+**Write the prompt like a ticket, not a chat message.** The worker cannot ask a
+follow-up question. It needs the goal, the acceptance criteria, the exact
+command that proves it, and the boundary of what it may touch. A vague prompt
+is how a worker burns twenty minutes producing the wrong diff.
+
+**Do not sit and watch it.** Dispatch, do something else, check the log later.
+If nothing else is in flight, say so and hand back — don&#x27;t poll in a loop.
+
+## Rules that survive delegation
+
+- **An issue comes first for anything code-changing**, with the worker on its
+  own issue-linked worktree lease. Delegation changes who does the work, not
+  whether it is tracked. The script enforces this: `--issue-url` is required
+  for *every* writable dispatch against a repository, including
+  `--allow-shared-tree`, and the issue must belong to the repository being
+  changed — a Dev Forge umbrella issue is a portfolio gate, not repo-local
+  implementation authority. Read-only recon needs no issue, and neither does a
+  non-repository scratch directory, where there is no branch or PR to trace to.
+- **The dispatcher still owns the verdict.** A worker&#x27;s diff is a submission,
+  not a result. Read it against the spec before it counts as done. That is the
+  Brain step in the loop and it does not delegate.
+- **Never delegate the confirmation of a protected action.** Merges, deploys,
+  destructive or hard-to-reverse operations, secret and access changes stay
+  with the human regardless of who wrote the code.
+- **Default service tier, smallest model that can safely finish.** Never
+  premium/priority/fast for volume work, per
+  [`prompts/muti-agent-work.md`](../../prompts/muti-agent-work.md).
+- **Workers get their own worktree or a scratch clone**, never a live primary
+  checkout — an unattended `codex` session has destroyed uncommitted work in a
+  primary checkout before (`docs/parked-ideas.md`, 2026-08-03 and 2026-08-05).
+- **Scratch goes in the job tmp dir**, never `/tmp`.</pre>
+    </details>
+  </section>
+
+  <footer>
+    Part of the <a href="/">Polyhydra Skills</a> catalog. Requires
+    <a href="https://claude.com/product/claude-code">Claude Code</a>.
+  </footer>
+
+</div>
+</body>
+</html>

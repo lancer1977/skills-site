@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>learning-slides — Polyhydra Skills</title>
+<meta name="description" content="Mid-chat, draft a quick-learning slide deck (short summary, a few slides, optional images) and push it to the learning-hub display server so it plays on a separate screen -- kiosk device or OBS Browse">
+<link rel="stylesheet" href="/assets/style.css">
+</head>
+<body>
+<div class="page">
+
+  <p class="eyebrow"><a href="/">Polyhydra Skills</a> &nbsp;/&nbsp; Content &amp; Art</p>
+  <h1>learning-slides</h1>
+  <p class="tagline">Mid-chat, draft a quick-learning slide deck (short summary, a few slides, optional images) and push it to the learning-hub display server so it plays on a separate screen -- kiosk device or OBS Browser Source, including live on stream. Use when the user wants to quickly learn or explain a topic visually, especially while streaming, or mentions &quot;learning-hub&quot; or &quot;make a slide deck for this&quot;.</p>
+  <div class="badges"><span class="badge">Content &amp; Art</span></div>
+  <hr class="rule" />
+
+  <div class="install">
+    <p>Drop this in — save the block below as <code>~/.claude/skills/learning-slides/SKILL.md</code>, or run:</p>
+    <pre>mkdir -p ~/.claude/skills/learning-slides
+cat &gt; ~/.claude/skills/learning-slides/SKILL.md &lt;&lt;'EOF'
+# (paste the full source block below into this file)
+EOF</pre>
+  </div>
+
+  <section>
+    <h2>Full source</h2>
+    <details>
+      <summary>SKILL.md — copy everything inside</summary>
+      <pre># Learning slides
+
+Turns a topic into a short auto-advancing slide deck and pushes it to
+`learning-hub` (`~/code/learning-hub`), a throwaway zero-dependency display
+server built for this. The display page runs on a separate device from the
+chat (kiosk browser tab, or an OBS Browser Source so it&#x27;s visible on stream).
+
+This is an MVP workflow being tested live on stream -- keep decks short and
+the loop fast rather than over-producing content.
+
+## Workflow
+
+1. **Draft the deck.** 4-8 slides. Each slide: a short `title` and a `body`
+   (either one sentence or 2-4 short bullet strings). Keep it skimmable --
+   this plays on a timer, the viewer can&#x27;t pause it.
+2. **Images (mix, per slide).** For slides that benefit from a real visual,
+   generate one with the `codex-art` skill. For slides that don&#x27;t need
+   custom art, leave `image` unset -- text-only slides render fine. Don&#x27;t
+   generate an image for every single slide by default; use judgment per
+   slide.
+3. **Narrate it.** Run
+   `node ~/code/learning-hub/scripts/narrate-deck.mjs /path/to/deck.json`
+   to generate British-voice (Piper, local, offline) narration per slide and
+   fill in each slide&#x27;s `audio` field. The display advances on narration end
+   instead of a fixed timer once a slide has audio. Skip this step only if
+   the user asks for silent/text-only slides.
+4. **Get approval before publishing.** Publishing plays on the user&#x27;s stream
+   immediately and interrupts whatever is currently showing. Always confirm
+   with `AskUserQuestion` (e.g. &quot;Push this deck to the display now?&quot;) before
+   calling `publish.sh` -- never publish unprompted.
+5. **Publish.**
+   ```bash
+   ~/code/learning-hub/publish.sh /path/to/deck.json [server-url]
+   ```
+   If the display server&#x27;s LAN address isn&#x27;t already known, ask the user
+   once and save it as a reference memory (e.g. &quot;learning-hub kiosk endpoint
+   is http://192.168.x.x:4173&quot;) so future sessions don&#x27;t have to ask again.
+   Default is `http://localhost:4173` if the server runs on the same machine
+   as the chat session.
+6. **Confirm it landed.** `curl -s &lt;server-url&gt;/state` should echo back the
+   published deck.
+
+## Deck JSON shape
+
+```json
+{
+  &quot;topic&quot;: &quot;Short label shown top-left&quot;,
+  &quot;duration_ms&quot;: 8000,
+  &quot;slides&quot;: [
+    { &quot;title&quot;: &quot;Slide heading&quot;, &quot;body&quot;: &quot;One sentence, or an array of bullets&quot;, &quot;image&quot;: &quot;data: URI or https URL&quot;, &quot;audio&quot;: &quot;/audio/&lt;topic-slug&gt;/slide-1.wav (filled in by narrate-deck.mjs)&quot; }
+  ]
+}
+```
+
+See `~/code/learning-hub/examples/sample-deck.json` for a full example and
+`~/code/learning-hub/README.md` for how the server itself works.
+
+## Notes
+
+- The server must already be running on the display device
+  (`node ~/code/learning-hub/server.mjs`) -- this skill only drafts and
+  publishes content, it doesn&#x27;t manage the server process.
+- No auth on publish -- fine for a trusted LAN test, not for anything public.</pre>
+    </details>
+  </section>
+
+  <footer>
+    Part of the <a href="/">Polyhydra Skills</a> catalog. Requires
+    <a href="https://claude.com/product/claude-code">Claude Code</a>.
+  </footer>
+
+</div>
+</body>
+</html>

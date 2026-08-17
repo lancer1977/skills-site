@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>handoff — Polyhydra Skills</title>
+<meta name="description" content="Split part of the current conversation into a durable handoff file and launch a fresh session seeded with it, so the old thread can close instead of dragging its context forward. Triggers on &quot;handoff&quot;">
+<link rel="stylesheet" href="/assets/style.css">
+</head>
+<body>
+<div class="page">
+
+  <p class="eyebrow"><a href="/">Polyhydra Skills</a> &nbsp;/&nbsp; Agent Workflow</p>
+  <h1>handoff</h1>
+  <p class="tagline">Split part of the current conversation into a durable handoff file and launch a fresh session seeded with it, so the old thread can close instead of dragging its context forward. Triggers on &quot;handoff&quot;, &quot;hand this off to a new thread&quot;, &quot;close this thread and start fresh&quot;, &quot;this thread is getting long&quot;. Also use when a new session is pointed at a handoff file, to orient before starting work.</p>
+  <div class="badges"><span class="badge">Agent Workflow</span></div>
+  <hr class="rule" />
+
+  <div class="install">
+    <p>Drop this in — save the block below as <code>~/.claude/skills/handoff/SKILL.md</code>, or run:</p>
+    <pre>mkdir -p ~/.claude/skills/handoff
+cat &gt; ~/.claude/skills/handoff/SKILL.md &lt;&lt;'EOF'
+# (paste the full source block below into this file)
+EOF</pre>
+  </div>
+
+  <section>
+    <h2>Full source</h2>
+    <details>
+      <summary>SKILL.md — copy everything inside</summary>
+      <pre># Handoff
+
+Move one piece of work out of a long-running conversation and into a fresh
+session that inherits nothing but a file.
+
+Two halves, and which one you&#x27;re in is determined by where you were invoked:
+
+- **write side** — invoked in the *old* thread. Extract the slice, write the
+  file, print the launch command. The old thread can then be closed.
+- **read side** — invoked in the *new* session, which was launched pointed at
+  a handoff file. Verify the file is still true, then start work.
+
+## Why not a subagent
+
+The instinct is to reach for the Agent tool. Don&#x27;t. A subagent does start
+cold, but **its report comes back into the calling thread** — that grows the
+context you&#x27;re trying to shed, and the old thread still can&#x27;t be closed.
+Subagents are for fan-out. This skill is for handoff. They are not
+substitutes.
+
+The only thing that produces a genuinely disposable parent thread is a
+separate `claude` process reading a file off disk.
+
+---
+
+# Write side
+
+Invoked in the thread being split. **Only this thread can see its own
+context**, so it has to be the author — a fresh session cannot come get it.
+
+## Step 1 — establish the slice
+
+The whole premise is that *part* of the thread moves and the rest stays. Get
+that boundary explicit before writing anything.
+
+If the user named the slice (&quot;hand off the migration part&quot;), use it. If they
+said something open-ended (&quot;hand this off&quot;), and the thread has been working
+on more than one thing, offer the candidate slices as `AskUserQuestion`
+options — one option per coherent piece, plus &quot;all of it, I&#x27;m closing this
+thread entirely.&quot;
+
+Do not guess when the thread has multiple live strands. Guessing wrong means
+the new session works the wrong problem with confident-looking notes.
+
+## Step 2 — gather real state, don&#x27;t re-narrate
+
+The handoff is a **state document, not a transcript summary**. Nobody needs
+to know what was tried in what order. They need to know where things stand.
+
+Pull live facts rather than trusting recollection of them:
+
+```sh
+git -C &lt;repo&gt; status --short --branch
+git -C &lt;repo&gt; log --oneline -10
+gh pr list --state open --head &lt;branch&gt;       # if the work has a PR
+gh issue view &lt;n&gt;                             # if it&#x27;s issue-backed
+git -C &lt;repo&gt; worktree list                   # if work is isolated
+```
+
+Confirm the work is actually repo-backed before leaning on any of these —
+`git rev-parse --is-inside-work-tree` — rather than assuming it. Config,
+skills, and dotfile paths frequently are not (`~/.claude` is not a git repo),
+and a handoff that implies a branch and a PR where none exist sends the next
+session hunting for things that were never there. When there&#x27;s no repo, note
+what *is* true instead: the file paths, whether anything is backed up, and
+how the change was verified.
+
+Every claim in the file should be one someone can check. If a fact can&#x27;t be
+verified cheaply, mark it as an assumption rather than stating it flat.
+
+## Step 3 — write the file
+
+Location: `~/.claude/handoffs/&lt;slug&gt;-&lt;YYYY-MM-DD&gt;.md` (`mkdir -p` first).
+
+That directory is deliberate. It is durable across sessions; it is *not*
+under `~/.claude/jobs/*/tmp`, so `prune-jobs.py` will never delete it; and it
+is outside every code repo, so a handoff never shows up as an uncommitted
+file in `git status`. Do not write handoffs into the repo being worked on.
+
+Use this schema. Keep it tight — a handoff that&#x27;s longer than the work it
+describes has defeated its own purpose.
+
+```markdown
+# Handoff: &lt;one-line scope of the slice&gt;
+
+**Written:** &lt;absolute date&gt; · **From:** &lt;what the old thread was doing&gt;
+**Where:** &lt;the coordinates that actually exist — see below&gt;
+
+## The ask
+&lt;What this session is supposed to accomplish. Self-contained — written for
+someone who never saw the original thread. No &quot;continue what we discussed&quot;.&gt;
+
+## State right now
+&lt;Verified facts. Branch, dirty files, what&#x27;s committed vs not, what&#x27;s
+deployed vs not, whether CI is green. Numbers, not impressions.&gt;
+
+## Decided — do not re-litigate
+&lt;Choices already made and closed, each with its one-line reason. This is the
+highest-value section: without it the new session re-opens settled questions
+and burns the context you were trying to save.&gt;
+
+## Ruled out — do not retry
+&lt;Approaches already attempted that failed, and how they failed. The single
+most expensive thing to lose in a handoff, because a cold session will
+otherwise walk straight back into them.&gt;
+
+## Next steps
+1. &lt;concrete, ordered, actionable&gt;
+
+## Done looks like
+&lt;The acceptance check. Ideally an exact command and its expected result.&gt;
+
+## Open questions
+&lt;Anything genuinely unresolved that the new session may need to ask about.
+Empty is a good sign — if this is long, the slice may not be ready to hand
+off.&gt;
+```
+
+The two sections that justify the whole exercise are **Decided** and **Ruled
+out**. A cold session with neither will cheerfully re-propose the approach
+you rejected an hour ago. If you write nothing else well, write those.
+
+### The &quot;Where&quot; line
+
+List only coordinates that exist. Not every handoff is repo-backed — config,
+skills, planning and triage threads often have no branch and no PR, and
+padding those fields with `none` reads as missing information rather than as
+a deliberate fact.
+
+- **Repo-backed work** — path, branch, PR/issue links, and the worktree if
+  the work is isolated:
+  `**Where:** ~/code/&lt;repo&gt; · branch `&lt;branch&gt;` · PR #&lt;n&gt;`
+- **Not version-controlled** — say so outright, because it&#x27;s load-bearing:
+  there is no branch to resume, no PR to check, and no backup if the file is
+  deleted. Don&#x27;t let a cold session infer a git workflow that isn&#x27;t there.
+  `**Where:** ~/.claude/skills/&lt;name&gt;/ — not version-controlled`
+- **No filesystem home at all** (pure decision or research threads) — drop
+  the line rather than inventing a location.
+
+## Step 4 — hand back the launch command
+
+Do not silently spawn the new session. Launching is the user&#x27;s call — they
+may want to finish something in the old thread first.
+
+Scoping and launch mechanics (cwd-only scoping, hub-root-vs-repo, the
+symlink trap, background vs interactive patterns) belong to the `projects`
+skill — read `~/.claude/skills/projects/SKILL.md` § launch for those, not
+restated here. What&#x27;s specific to a handoff is the payload: point the new
+session at the handoff file instead of an ad-hoc opening prompt.
+
+Background (can be run directly; shell functions aren&#x27;t available to the Bash
+tool, so use full commands, and always label with `-n`):
+
+```sh
+cd ~/code/&lt;repo&gt; &amp;&amp; claude --bg -n &quot;&lt;label&gt;&quot; --add-dir ~/projects/&lt;hub&gt; \
+  &quot;Read ~/.claude/handoffs/&lt;file&gt;.md and continue that work.&quot;
+```
+
+Interactive needs the user&#x27;s own TTY — print it for them to run, preferring
+their launcher shortcut (`pw &lt;hub&gt; &lt;repo&gt;`, `p &lt;hub&gt;`):
+
+```sh
+pw &lt;hub&gt; &lt;repo&gt;
+# then: Read ~/.claude/handoffs/&lt;file&gt;.md and continue that work.
+```
+
+Close by telling them plainly that the old thread is now safe to close, and
+name the file path so they can find it if they don&#x27;t launch immediately.
+
+---
+
+# Read side
+
+Invoked in a fresh session that was pointed at a handoff file.
+
+1. **Read the file.** It is the scope. Don&#x27;t widen it — the old thread kept
+   the rest of the work deliberately.
+2. **Verify before trusting.** A handoff is a snapshot of a moment that has
+   since passed. Between writing and reading, CI may have finished, a PR may
+   have merged, a branch may have moved. Re-run the cheap checks — `git
+   status`, `gh pr view`, the acceptance command — and say plainly if reality
+   has drifted from the file rather than proceeding on stale notes.
+3. **Honor &quot;Decided&quot; and &quot;Ruled out&quot;.** They exist to stop you re-deriving
+   settled ground. If you think a decision was wrong, say so in one sentence
+   and keep going under it — that&#x27;s the user&#x27;s call to reverse, not yours.
+4. **Confirm the plan, then work.** Restate the ask and the first step in
+   your own words so drift shows up immediately, then start.
+
+If the file is missing, thin, or contradicts what&#x27;s on disk, say so up front
+rather than filling the gaps with plausible invention. A wrong handoff is
+worse than no handoff, because it reads as authoritative.
+
+---
+
+## Ending a turn
+
+Every handback here still ends in a picker — see CLAUDE.md&#x27;s MAID section
+for the rule, not restated here.
+
+- **Write side** — launch background now / print the interactive command /
+  adjust the slice / stop here.
+- **Read side** — start on step 1 / re-verify drifted state first / adjust
+  scope before starting.</pre>
+    </details>
+  </section>
+
+  <footer>
+    Part of the <a href="/">Polyhydra Skills</a> catalog. Requires
+    <a href="https://claude.com/product/claude-code">Claude Code</a>.
+  </footer>
+
+</div>
+</body>
+</html>

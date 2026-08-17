@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>goals — Polyhydra Skills</title>
+<meta name="description" content="Track and advance real-life goals — house work, errands, decisions, recurring obligations — held as files in ~/code/goals. Use when the user asks &quot;what do I need to do&quot;, &quot;where are we on the house stu">
+<link rel="stylesheet" href="/assets/style.css">
+</head>
+<body>
+<div class="page">
+
+  <p class="eyebrow"><a href="/">Polyhydra Skills</a> &nbsp;/&nbsp; Personal</p>
+  <h1>goals</h1>
+  <p class="tagline">Track and advance real-life goals — house work, errands, decisions, recurring obligations — held as files in ~/code/goals. Use when the user asks &quot;what do I need to do&quot;, &quot;where are we on the house stuff&quot;, wants to add or close a goal, wants a status check or a nudge, or mentions a goal by name (gutters, AC, a subscription to cancel). Also use when the user describes a new real-world obligation in passing that should not be lost.</p>
+  <div class="badges"><span class="badge">Personal</span></div>
+  <hr class="rule" />
+
+  <div class="install">
+    <p>Drop this in — save the block below as <code>~/.claude/skills/goals/SKILL.md</code>, or run:</p>
+    <pre>mkdir -p ~/.claude/skills/goals
+cat &gt; ~/.claude/skills/goals/SKILL.md &lt;&lt;'EOF'
+# (paste the full source block below into this file)
+EOF</pre>
+  </div>
+
+  <section>
+    <h2>Full source</h2>
+    <details>
+      <summary>SKILL.md — copy everything inside</summary>
+      <pre># goals
+
+A file-backed tracker for real-life goals at `~/code/goals`. One Markdown file
+per goal in `goals/`, driven by `~/code/goals/bin/goals`. Full format reference
+is in that repo&#x27;s `README.md`.
+
+This is deliberately not a code-project tracker. It holds things that happen in
+the physical world: errands, house work, vendor decisions, obligations with
+renewal dates.
+
+## Read before you write
+
+Start with `goals list` and, for anything you are about to touch,
+`goals show &lt;id&gt;`. The goal body carries context the frontmatter does not —
+sequencing reasons, things to watch for, prior attempts. Acting without reading
+it is how you tell someone to cancel a contract that pays for the repair they
+have not had yet.
+
+## The commands
+
+```sh
+goals                      # next action per open goal — the default view
+goals list [--all] [--status S] [--area A]
+goals show &lt;id&gt;
+goals log &lt;id&gt; &quot;what happened&quot;
+goals step &lt;id&gt; &lt;n&gt; [--undo]
+goals set &lt;id&gt; field=value [field=value ...]
+goals done &lt;id&gt; [--note &quot;...&quot;]
+goals add &quot;Title&quot; [--kind K] [--priority N] [--due YYYY-MM-DD] [--next &quot;...&quot;]
+goals nudge [--quiet]      # overdue / due soon / gone quiet / blocked
+goals agenda               # agent-doable vs. needs-human, across open goals
+goals commit [-m msg]
+```
+
+Ids match on substring, so `goals show gutters` resolves to `clear-gutters`.
+
+## Answering &quot;where are we&quot;
+
+Run `goals nudge` first, then `goals`. Lead with what is overdue or has gone
+quiet — the goal nobody has touched is the one the user needs to hear about,
+not the one already moving. Keep it to a few lines. This is a status check, not
+a report.
+
+## Logging
+
+Log anything that moved: a call made, a quote received, a decision taken, a
+dead end. `goals log &lt;id&gt; &quot;...&quot;` is cheap and it is what makes staleness
+detection mean anything. A goal whose last entry is three weeks old reads as
+abandoned whether or not it is, so log the non-events too — &quot;called, no answer&quot;
+is real information.
+
+When the user mentions in conversation that they did something on a goal,
+log it without being asked. That is the main way this tracker stays true.
+
+## The agentic boundary
+
+Every goal declares `agent_can` and `needs_human`. Honour it literally.
+
+You may do the `agent_can` work unattended — build vendor shortlists, draft
+messages the user will send, assemble comparison tables, research what a good
+version of the job includes, keep the files current.
+
+You may not do `needs_human` work, and you must not route around it. In
+particular, never contact a vendor, submit a form, place a call, start a
+cancellation, or spend money on the user&#x27;s behalf — even where a tool would
+technically let you. Draft it and hand it over. If a goal seems to need an
+action that is not in either list, ask before doing it, and add it to the right
+list once the user answers.
+
+## Adding goals
+
+When the user describes a new real-world obligation in passing, offer to add
+it — and give it a `next_step` that is a genuine physical action, not a
+restatement of the title. A goal without a real next step is the one that will
+still be open in six months.
+
+Set `due` only when there is an actual reason for the date. Invented deadlines
+train the user to ignore real ones. A renewal date, a season, a notice window:
+those are reasons. &quot;Two weeks from now&quot; is not.
+
+## Closing out
+
+`goals done &lt;id&gt; --note &quot;how it ended&quot;`. Do not delete goal files — a closed
+goal with its log intact is the record of how long the thing took, what it
+cost, and who did it well. That is what makes the next one easier.
+
+Use `status=dropped` for goals abandoned rather than achieved, and log why.</pre>
+    </details>
+  </section>
+
+  <footer>
+    Part of the <a href="/">Polyhydra Skills</a> catalog. Requires
+    <a href="https://claude.com/product/claude-code">Claude Code</a>.
+  </footer>
+
+</div>
+</body>
+</html>

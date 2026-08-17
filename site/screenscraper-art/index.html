@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>screenscraper-art — Polyhydra Skills</title>
+<meta name="description" content="Safely inspect and stage ScreenScraper artwork through the local Skyscraper client. Use when a user wants game art or metadata for a catalog, Batocera, or emulation library without exposing credential">
+<link rel="stylesheet" href="/assets/style.css">
+</head>
+<body>
+<div class="page">
+
+  <p class="eyebrow"><a href="/">Polyhydra Skills</a> &nbsp;/&nbsp; Content &amp; Art</p>
+  <h1>screenscraper-art</h1>
+  <p class="tagline">Safely inspect and stage ScreenScraper artwork through the local Skyscraper client. Use when a user wants game art or metadata for a catalog, Batocera, or emulation library without exposing credentials or writing directly to a live media library. Ported from a Codex plugin.</p>
+  <div class="badges"><span class="badge">Content &amp; Art</span></div>
+  <hr class="rule" />
+
+  <div class="install">
+    <p>Drop this in — save the block below as <code>~/.claude/skills/screenscraper-art/SKILL.md</code>, or run:</p>
+    <pre>mkdir -p ~/.claude/skills/screenscraper-art
+cat &gt; ~/.claude/skills/screenscraper-art/SKILL.md &lt;&lt;'EOF'
+# (paste the full source block below into this file)
+EOF</pre>
+  </div>
+
+  <section>
+    <h2>Full source</h2>
+    <details>
+      <summary>SKILL.md — copy everything inside</summary>
+      <pre># ScreenScraper Art
+
+This skill drives a bundled local MCP server (`mcp-server/server.py`) that wraps
+the `Skyscraper` CLI. It never handles ScreenScraper credentials directly —
+those stay in Skyscraper&#x27;s own `~/.skyscraper/config.ini` (must be `0600`).
+
+## Check the MCP server is connected first
+
+This skill only works if the `screenscraper-art` MCP server is registered for
+this session. Check the available tools for `screenscraper_health`,
+`screenscraper_inspect`, and `screenscraper_stage`. If they are not present,
+do not fail silently — tell the user the server isn&#x27;t wired up yet and walk
+them through adding it, e.g. in a project&#x27;s `.mcp.json`:
+
+```json
+{
+  &quot;mcpServers&quot;: {
+    &quot;screenscraper-art&quot;: {
+      &quot;command&quot;: &quot;python3&quot;,
+      &quot;args&quot;: [&quot;/home/lancer1977/.claude/skills/screenscraper-art/mcp-server/server.py&quot;]
+    }
+  }
+}
+```
+
+(Or the user-level MCP config, depending on where they want it available.)
+After adding it, the user needs to restart/reconnect the session for the tools
+to appear — say so rather than retrying silently.
+
+## Use the tools in this order
+
+1. `screenscraper_health` — checks that Skyscraper is installed and the
+   protected local config is available. It never returns credentials.
+2. `screenscraper_inspect` — matches one local ROM/archive and returns its
+   sanitized result. It only populates Skyscraper&#x27;s local cache; nothing is
+   written outside a temp dir.
+3. `screenscraper_stage` — writes a one-game, reviewable media/gamelist result
+   only to a new, explicit staging directory. It requires `allow_write: true`
+   and refuses to target a directory that already exists (so it can never
+   overwrite a live library).
+
+## Hard rules
+
+- Never put credentials in prompts, source files, or command lines — they
+  live only in Skyscraper&#x27;s local config.
+- Do not use this for bulk harvesting or direct publication to Batocera/CDN.
+  This is a one-game-at-a-time, stage-then-review workflow.
+- Always inspect the staged assets and the generated
+  `screenscraper-manifest.json` (rights status, match info) with the user
+  before they import anything into a live library.</pre>
+    </details>
+  </section>
+
+  <footer>
+    Part of the <a href="/">Polyhydra Skills</a> catalog. Requires
+    <a href="https://claude.com/product/claude-code">Claude Code</a>.
+  </footer>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>project-home — Polyhydra Skills</title>
+<meta name="description" content="Scaffold or extend a ~/projects/&lt;topic&gt; project-home hub that coordinates multiple ~/code repos around one theme (symlinks + workspace.yaml + worktrees/ + README + LOCAL-WORK.md), matching the existin">
+<link rel="stylesheet" href="/assets/style.css">
+</head>
+<body>
+<div class="page">
+
+  <p class="eyebrow"><a href="/">Polyhydra Skills</a> &nbsp;/&nbsp; Agent Workflow</p>
+  <h1>project-home</h1>
+  <p class="tagline">Scaffold or extend a ~/projects/&lt;topic&gt; project-home hub that coordinates multiple ~/code repos around one theme (symlinks + workspace.yaml + worktrees/ + README + LOCAL-WORK.md), matching the existing stepmania/rpgs convention. Use when the user wants to &quot;set up a workspace for X&quot;, &quot;make a project hub for these repos&quot;, &quot;pull related repos together&quot;, or asks to replicate the rpgs/stepmania pattern for another topic.</p>
+  <div class="badges"><span class="badge">Agent Workflow</span></div>
+  <hr class="rule" />
+
+  <div class="install">
+    <p>Drop this in — save the block below as <code>~/.claude/skills/project-home/SKILL.md</code>, or run:</p>
+    <pre>mkdir -p ~/.claude/skills/project-home
+cat &gt; ~/.claude/skills/project-home/SKILL.md &lt;&lt;'EOF'
+# (paste the full source block below into this file)
+EOF</pre>
+  </div>
+
+  <section>
+    <h2>Full source</h2>
+    <details>
+      <summary>SKILL.md — copy everything inside</summary>
+      <pre># project-home
+
+Builds the house convention used under `~/projects` for grouping related
+`~/code` repos into one coordinated hub — see `~/projects/rpgs` and
+`~/projects/stepmania` for reference examples, and
+`~/projects/LOCAL-WORK-RUNBOOK.md` for the shared contract every hub links to.
+
+A project-home is **not** a git repo and does not copy or move source code.
+It&#x27;s a symlink tree plus a manifest, sitting alongside the real checkouts in
+`~/code`.
+
+## Before scaffolding anything: check for the two-tier reality
+
+`~/projects` currently has two conventions in use — check which one already
+fits before picking:
+
+1. **Flat symlink hub** (`batocera`, `gaming`, `spottie`, `socials`) — just
+   repo symlinks + `LOCAL-WORK.md`, no `workspace.yaml`/README. Fine for a
+   handful of clearly-related repos with no need for role documentation.
+2. **Structured project-home** (`stepmania`, `rpgs`) — adds `workspace.yaml`
+   (name/kind/purpose/repositories with role+note), a fuller README with
+   ownership boundaries, and a `worktrees/` dir for folded-in git worktrees.
+   Use this when there are &gt;5 repos, when repos have distinct roles worth
+   documenting, or when the user is folding in existing per-repo hubs.
+
+Default to the structured form unless the user asks for something lighter —
+it&#x27;s what was chosen for `rpgs` and is the richer, more maintained pattern.
+
+## Step 1 — find candidate repos, don&#x27;t just pattern-match names
+
+Grep for name matches, but a name match is not enough — a repo can share a
+word with the topic and be unrelated (e.g. `Lonewolf` is a Xamarin scaffold,
+not the Lone Wolf gamebooks; `Campaign` at first glance looked like an
+unrelated ChannelCheevos repo until its README said &quot;the sibling
+`rpg-gm-tools` repo consumes this backend&quot;). For each candidate:
+
+```sh
+head -c 300 ~/code/&lt;name&gt;/README.md
+```
+
+Read enough to confirm the repo is actually about the topic, not just named
+near it. When two repos look like duplicates (same README content, similar
+name), check whether they&#x27;re the same GitHub repo cloned twice, or genuinely
+different repos:
+
+```sh
+git -C ~/code/&lt;name-a&gt; remote -v
+git -C ~/code/&lt;name-b&gt; remote -v
+git -C ~/code/&lt;name-a&gt; log -1 --format=&#x27;%ci %s&#x27;
+git -C ~/code/&lt;name-b&gt; log -1 --format=&#x27;%ci %s&#x27;
+```
+
+Same remote URL → same repo, pick one (prefer the more recently touched /
+canonically named clone) and note the excluded one in `workspace.yaml`&#x27;s
+`excluded:` list with a one-line reason. Different remotes → real duplicates;
+ask the user whether to include both or pick one (see Step 5).
+
+**Present the candidate list and ask before finalizing scope** — this is
+exactly the kind of judgment call `AskUserQuestion` exists for: which repos
+are in, which duplicates to keep, how wide to cast the net (core vs.
+core+adjacent vs. everything). Don&#x27;t silently decide a 20+ repo scope.
+
+## Step 2 — check for existing single-repo hubs covering the same repos
+
+Before creating `repos/&lt;name&gt;` symlinks, check whether `~/projects/&lt;name&gt;`
+already exists as its own single-repo hub (a dir with just `main -&gt;
+~/code/&lt;name&gt;` + `LOCAL-WORK.md` + maybe `.claude`/`prs`/`.worktrees`):
+
+```sh
+ls -la ~/projects/&lt;candidate-repo-name&gt; 2&gt;/dev/null
+```
+
+If it exists and has **only** symlinks and stale `.claude/*.lock` files, it&#x27;s
+safe to fold in and remove. If it has real content — active `.worktrees/` or
+`prs/*` directories — **do not delete it silently**. Those are live git
+worktrees (registered branches, uncommitted state). Confirm with the user
+whether to fold them in (see Step 4) or leave the old hub standing.
+
+## Step 3 — scaffold the hub
+
+```sh
+mkdir -p ~/projects/&lt;topic&gt;/repos ~/projects/&lt;topic&gt;/worktrees
+for name in &lt;repo1&gt; &lt;repo2&gt; ...; do
+  ln -s ~/code/&quot;$name&quot; ~/projects/&lt;topic&gt;/repos/&quot;$name&quot;
+done
+ln -s ../LOCAL-WORK-RUNBOOK.md ~/projects/&lt;topic&gt;/LOCAL-WORK.md
+```
+
+Then write `workspace.yaml` (see `~/projects/rpgs/workspace.yaml` for the
+full shape: `name`, `kind: project-home`, `purpose`, `repositories` map with
+`path`/`role`/optional `note`, `worktrees_dir`, `excluded` list with
+reasons) and a `README.md` grouping repos by role with a short table per
+group, plus a &quot;what was left out and why&quot; section.
+
+## Step 4 — fold in worktrees, carefully
+
+If migrating an existing per-repo hub&#x27;s live worktrees, **never `mv` a git
+worktree directory** — it breaks the administrative link back to the main
+repo&#x27;s `.git/worktrees/&lt;name&gt;`. Always use:
+
+```sh
+git -C &lt;main-repo-checkout&gt; worktree move &lt;old-path&gt; &lt;new-path&gt;
+```
+
+Run `git -C &lt;repo&gt; worktree list` first to see every worktree and which repo
+it actually belongs to — a worktree living inside `hubA/prs/foo` is not
+necessarily a worktree of the repo `hubA` is named after; check the branch
+shown against each repo before assuming. Plain (non-git) scaffold
+directories — no `.git` file/dir, doesn&#x27;t appear in `worktree list` — should
+just `mv` normally into a `scratch/` dir, not treated as a worktree.
+
+### Optional: sweep for stray worktrees anywhere under ~/code
+
+A repo can accumulate worktrees scattered outside the hub entirely. To find
+them all:
+
+```sh
+for repo in &lt;repo1&gt; &lt;repo2&gt; ...; do
+  git -C ~/code/&quot;$repo&quot; worktree list | tail -n +2
+done
+```
+
+Triage each hit before touching it:
+
+- **Dead** (directory no longer exists — `git worktree list` still shows the
+  path even if it&#x27;s gone): run `git -C &lt;repo&gt; worktree prune -v` to clean up
+  the metadata. Safe, non-destructive to real files.
+- **Parked under `~/code/worktrees/` or `~/code/.worktrees/`**: this is a
+  shared, established convention used across unrelated repos too — leave it
+  alone, don&#x27;t move into the new hub.
+- **Inside the repo&#x27;s own `.worktrees/` subdir**: already self-contained,
+  leave it.
+- **In ephemeral/agent-scratch locations** (`/tmp`, `/dev/shm`, `/var/tmp`,
+  `~/.cache/codex*`, `~/.cache/hermes`, `~/.cache/deploy`,
+  `~/.cache/worktrees`): often tied to active automation expecting a fixed
+  path (a deploy script, an agent runner). Do not move these without asking
+  — report them to the user instead and let them name any that should move.
+- **A genuinely orphaned top-level `~/code/&lt;name&gt;` directory** (not inside
+  any of the above conventions): this is the real &quot;stray branch&quot; case —
+  `git worktree move` it into the hub&#x27;s `worktrees/` dir.
+
+Report what you pruned, what you moved, and what you deliberately left in
+place (with why) — don&#x27;t silently mass-migrate ephemeral scratch state.
+
+## Step 5 — duplicates and exclusions go in `workspace.yaml`, not silence
+
+Every repo that looked relevant but got excluded (legacy clone, unrelated
+name collision, ambiguous duplicate) belongs in the `excluded:` list with a
+one-line reason, so a future pass doesn&#x27;t re-litigate the same judgment call
+from scratch.
+
+## Step 6 — verify before declaring done
+
+```sh
+git -C ~/code/&lt;repo&gt; worktree list   # confirm new paths registered correctly
+ls ~/projects/&lt;topic&gt;/repos | wc -l  # matches intended repo count
+ls ~/projects/&lt;topic&gt;/worktrees      # matches migrated count
+```
+
+Then end the turn with a picker of real next steps (open in editor, write
+more docs, review scope again, stop here) — every handback here still ends
+in a picker; see CLAUDE.md&#x27;s MAID section for the rule, not restated here.</pre>
+    </details>
+  </section>
+
+  <footer>
+    Part of the <a href="/">Polyhydra Skills</a> catalog. Requires
+    <a href="https://claude.com/product/claude-code">Claude Code</a>.
+  </footer>
+
+</div>
+</body>
+</html>

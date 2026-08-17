@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>back-on-the-horse — Polyhydra Skills</title>
+<meta name="description" content="Recap what happened on a project in roughly the last 24 hours (or a stated window), rendered as a visual card with a light &quot;rough morning, here&#x27;s the highlights&quot; tone, plus a clear list of what&#x27;s stil">
+<link rel="stylesheet" href="/assets/style.css">
+</head>
+<body>
+<div class="page">
+
+  <p class="eyebrow"><a href="/">Polyhydra Skills</a> &nbsp;/&nbsp; Agent Workflow</p>
+  <h1>back-on-the-horse</h1>
+  <p class="tagline">Recap what happened on a project in roughly the last 24 hours (or a stated window), rendered as a visual card with a light &quot;rough morning, here&#x27;s the highlights&quot; tone, plus a clear list of what&#x27;s still open and what to do next. Triggers on &quot;what happened while I was out&quot;, &quot;catch me up&quot;, &quot;back on the horse&quot;, &quot;recap the last 24 hours&quot;, &quot;get back on track&quot;, &quot;morning recap for this project&quot;. Not for calendar/personal-schedule briefs — use the morning skill for that.</p>
+  <div class="badges"><span class="badge">Agent Workflow</span></div>
+  <hr class="rule" />
+
+  <div class="install">
+    <p>Drop this in — save the block below as <code>~/.claude/skills/back-on-the-horse/SKILL.md</code>, or run:</p>
+    <pre>mkdir -p ~/.claude/skills/back-on-the-horse
+cat &gt; ~/.claude/skills/back-on-the-horse/SKILL.md &lt;&lt;'EOF'
+# (paste the full source block below into this file)
+EOF</pre>
+  </div>
+
+  <section>
+    <h2>Full source</h2>
+    <details>
+      <summary>SKILL.md — copy everything inside</summary>
+      <pre># Back on the horse
+
+A project recap skill. Gathers what actually happened in the recent window,
+renders it as one compact visual card, and closes with a short, concrete
+&quot;what to do next&quot; list. The tone is a groggy-morning, first-coffee vibe —
+but the content underneath is exact and sourced from real state, never
+invented or rounded up to sound better.
+
+## When to use
+
+Fires on requests like:
+- &quot;what happened while I was out&quot;
+- &quot;catch me up&quot;
+- &quot;back on the horse&quot;
+- &quot;recap the last 24 hours&quot; / &quot;recap the last [N hours/days]&quot;
+- &quot;get back on track, what&#x27;s left&quot;
+
+Do not use for personal calendar/schedule briefs (that&#x27;s a different skill).
+This is specifically for engineering-project state: commits, PRs, issues,
+and any other trackable unit of work in the current repo/project.
+
+## Step 1 — gather real data, don&#x27;t guess
+
+Pull from whatever sources actually exist for this project. Common ones:
+
+- `git log &lt;default-branch&gt; --since=&quot;&lt;window&gt;&quot; --format=&#x27;%h %ad %s&#x27; --date=format:&#x27;%H:%M&#x27;`
+  against the real default branch (check `git remote show origin` or
+  `git symbolic-ref refs/remotes/origin/HEAD` — don&#x27;t assume `main`).
+- `gh issue list --state open` and a closed-issue query scoped to the window
+  (`gh issue list --state closed --search &quot;closed:&gt;=&lt;date&gt;&quot;`), if the repo
+  uses GitHub issues.
+- `gh pr list --state open` for anything still hanging, plus merged PRs in
+  the window (from the git log above, or `gh pr list --state merged --search
+  &quot;merged:&gt;=&lt;date&gt;&quot;`).
+- Anything else this specific project tracks as a unit of work — worktrees,
+  deploy state, a kanban/board tool, whatever came up earlier in the
+  conversation as the actual thing being managed. If the user&#x27;s prior
+  session established a specific tracked backlog (e.g. &quot;48 stray
+  worktrees&quot;), carry that number forward rather than re-deriving it from
+  scratch unless it&#x27;s cheap to re-verify.
+
+If a data source can&#x27;t be reached or doesn&#x27;t apply to this project, leave
+it out rather than fabricating a plausible-looking number. Every number
+that ends up on the card must trace back to a real command&#x27;s output.
+
+## Step 2 — figure out three buckets
+
+1. **Shipped / done** — merged PRs, closed issues, completed cleanup passes.
+   One line each, plain language, no jargon dump.
+2. **Still on the table** — anything left open, anything promised but not
+   started, anything flagged mid-session and never turned into a tracked
+   item. Be honest here even if it&#x27;s not flattering — this is the whole
+   point of the recap.
+3. **Next concrete step(s)** — 1-3 things, each phrased as an action the
+   user can greenlight or do right now, not a vague area of concern.
+
+Optionally compute a rough &quot;percent back on track&quot; feel — e.g. done items
+divided by (done + still-open) — and say explicitly that it&#x27;s a vibe
+metric, not a scientific one. Don&#x27;t present it as more precise than it is.
+
+## Step 3 — render the widget
+
+Call `mcp__visualize__read_me` with `modules: [&quot;mockup&quot;]` if this is the
+first visual call in the session (skip if design-system context is already
+loaded from earlier in the conversation). Then call `mcp__visualize__show_widget`
+following this exact shape — reuse it, don&#x27;t redesign it each time:
+
+1. A quiet header line: a `ti-coffee` icon plus a short, low-key phrase
+   setting the &quot;first coffee&quot; tone (max ~6 words, sentence case, no
+   punctuation flourish, never more than one per card).
+2. A metric-card grid (`repeat(auto-fit, minmax(140px, 1fr))`, `--surface-1`
+   cards) — 3-5 stat cards pulled straight from step 1&#x27;s real numbers.
+   Labels like &quot;Shipped&quot;, &quot;Closed, no code needed&quot;, &quot;Open issues left&quot;.
+3. Optional: a thin progress bar labeled with the vibe-metric from step 2,
+   using `--fill-warning` fill on a `--surface-1` track — only include this
+   if a done/open ratio actually makes sense for the project; skip it
+   rather than force a number that doesn&#x27;t mean anything.
+4. A &quot;highlights while you were out&quot; list — `--surface-1` rows, one relevant
+   Tabler icon each (`ti-git-pull-request` for shipped work, `ti-trash` for
+   cleanup, etc.), one sentence per row, real accomplishments only.
+5. A &quot;still on the table&quot; list — same row pattern but `--bg-warning`
+   background and `--text-warning` icon/text, so it visually reads as the
+   &quot;not done yet&quot; section. This section must not be empty just to make the
+   card look better — if there&#x27;s genuinely nothing outstanding, say so in
+   the response text instead of forcing a row.
+
+Follow the loaded design-system rules exactly: sentence case everywhere, no
+emoji, Tabler outline icons only, CSS variables for all colors (never raw
+hex), no titles or explanatory prose inside the widget itself, two-weight
+typography only (400/500).
+
+## Step 4 — keep the response text minimal
+
+The widget carries the recap. Your surrounding chat text should be one or
+two sentences at most — enough to introduce it and hand off the &quot;what&#x27;s
+next&quot; decision, not a restatement of what the card already shows (the tool
+result will explicitly warn against duplicating it — respect that). If
+there&#x27;s a real decision the user needs to make about what to tackle next,
+offer it as a short set of concrete options (a picker if the project&#x27;s
+conventions call for one) rather than re-explaining the whole card in
+prose.
+
+## Non-negotiables
+
+- Every number on the card must come from a real command run in this
+  session, not an estimate dressed up as a fact.
+- The &quot;still on the table&quot; section is not optional editorializing — always
+  check for it explicitly (stale worktrees, un-run tests, promised-but-
+  unfiled follow-ups, known races/bugs mentioned in passing earlier in the
+  conversation) rather than only reporting the wins.
+- The tone lives in the header line and the tiny bit of surrounding
+  response text, never in the substance of what&#x27;s reported. A rough
+  morning does not get to lower the bar on accuracy.</pre>
+    </details>
+  </section>
+
+  <footer>
+    Part of the <a href="/">Polyhydra Skills</a> catalog. Requires
+    <a href="https://claude.com/product/claude-code">Claude Code</a>.
+  </footer>
+
+</div>
+</body>
+</html>

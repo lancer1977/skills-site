@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>dont-reinvent-the-wheel — Polyhydra Skills</title>
+<meta name="description" content="Before scaffolding a &quot;new&quot; idea (tool, automation, script), search the user&#x27;s own ecosystem and known external projects for prior art so work is not duplicated. Triggers on &quot;new idea&quot;, &quot;what if we bui">
+<link rel="stylesheet" href="/assets/style.css">
+</head>
+<body>
+<div class="page">
+
+  <p class="eyebrow"><a href="/">Polyhydra Skills</a> &nbsp;/&nbsp; Agent Workflow</p>
+  <h1>dont-reinvent-the-wheel</h1>
+  <p class="tagline">Before scaffolding a &quot;new&quot; idea (tool, automation, script), search the user&#x27;s own ecosystem and known external projects for prior art so work is not duplicated. Triggers on &quot;new idea&quot;, &quot;what if we built&quot;, &quot;let&#x27;s create a&quot;, &quot;is there something already for this&quot; -- any moment a fresh tool/automation/skill is about to be proposed. Not for routine bug fixes or well-scoped features in an already-identified codebase.</p>
+  <div class="badges"><span class="badge">Agent Workflow</span></div>
+  <hr class="rule" />
+
+  <div class="install">
+    <p>Drop this in — save the block below as <code>~/.claude/skills/dont-reinvent-the-wheel/SKILL.md</code>, or run:</p>
+    <pre>mkdir -p ~/.claude/skills/dont-reinvent-the-wheel
+cat &gt; ~/.claude/skills/dont-reinvent-the-wheel/SKILL.md &lt;&lt;'EOF'
+# (paste the full source block below into this file)
+EOF</pre>
+  </div>
+
+  <section>
+    <h2>Full source</h2>
+    <details>
+      <summary>SKILL.md — copy everything inside</summary>
+      <pre># Don&#x27;t reinvent the wheel
+
+A prior-art check. Runs before committing to build something &quot;new&quot; — catches
+the case where the user&#x27;s own repos (especially the meta/infra ones) already
+solve most of the problem, or where an established external project already
+does.
+
+## When to use
+
+Fires whenever the user proposes a new tool, script, automation, recurring
+task, or skill — before any scaffolding, file creation, or scheduling
+happens. Skip it for ordinary bug fixes or feature work inside a codebase
+that&#x27;s already been identified (there&#x27;s nothing to dedupe against there).
+
+## Step 1 — pull keywords, don&#x27;t guess scope
+
+Extract 2-4 concrete keywords from the idea (e.g. &quot;PR queue cleaner&quot; →
+`pr`, `merge`, `review`, `ci status`). Don&#x27;t ask the user to restate it —
+work from what they already said.
+
+## Step 2 — search the user&#x27;s own ecosystem first
+
+Check `~/code` for prior art, in this order:
+
+1. **Meta/infra repos first** — these are where cross-cutting tooling lives:
+   `dev-forge` (standards layer, cron conventions, agent/skill conventions,
+   work-intake process), `repo-health` (.NET repo audit/standardizer),
+   `homelab-health` (deterministic fact-collector, avoids burning AI calls
+   on broad discovery), `homelab-gitops` (homelab infra source of truth).
+   Read each repo&#x27;s README first for a fast yes/no on relevance.
+2. Use `mcp__lumen__semantic_search` over `~/code` for the extracted
+   keywords if available (preferred over raw grep/find per this project&#x27;s
+   tooling setup); fall back to `grep -ril` / `find` across `~/code` scoped
+   to script and doc files if semantic search isn&#x27;t available.
+3. Look specifically for: existing scripts/cron jobs doing something
+   similar, existing docs describing a convention for this class of
+   problem, existing skills (`~/.claude/skills`, `dev-forge`&#x27;s
+   `openclaw-forge/skills`) that already cover it.
+
+Note: dev-forge&#x27;s `workflows/work-intake.md` and
+`templates/repository-finding.md` already define a formal &quot;Duplicate
+check&quot; step for repo-audit findings — this skill is the lightweight,
+conversational version of the same idea, not a replacement for that
+process when working inside dev-forge&#x27;s own formal intake.
+
+## Step 3 — sanity-check against known current policy
+
+Before recommending reuse of anything found, verify it against current
+direction rather than trusting the doc at face value — conventions drift.
+Known drift as of 2026-08-01: **Hermes is deprecated** (user has been
+purging it for months; GitHub Issues is now the only work tracker), and
+the old &quot;autonomous workers never auto-merge&quot; rule is outdated (current
+rule: define goals up front, auto-merge is fine once met, with `main`
+reserved for production and a separate `dev` branch for development).
+If what you find still assumes Hermes or a blanket no-auto-merge rule,
+flag it as stale rather than proposing it as-is.
+
+## Step 4 — quick external check (only if nothing internal fits)
+
+If the internal search comes up empty or thin, do a fast mental/web check
+for whether an established open-source or SaaS project already solves this
+class of problem well (e.g. Mergify/Kodiak/GitHub merge queue for PR
+auto-merge, Renovate/Dependabot for dependency PRs). Mention it as an
+option, not a mandate — the user may still prefer to own the tooling.
+
+## Step 5 — report before building
+
+Summarize findings compactly:
+
+- **What already exists** (repo/file, one line on what it does)
+- **What&#x27;s missing / doesn&#x27;t fit**
+- **Recommendation** (reuse as-is / extend existing / build new because
+  nothing fits / this is already solved externally, consider adopting)
+
+Then hand the decision to the user — use `AskUserQuestion` with the
+recommendation as the first, &quot;(Recommended)&quot;-labeled option, per this
+user&#x27;s standing preference for tappable choices over prose. Do not start
+building until they pick.
+
+## Non-negotiables
+
+- Never silently build something new without first checking meta/infra
+  repos — that&#x27;s the whole point of this skill.
+- Never assume a doc found during the search reflects current policy;
+  cross-check against Step 3&#x27;s known drift points and anything the user
+  has said more recently in the conversation.
+- Keep the report short — file paths and one-line summaries, not full
+  file dumps.</pre>
+    </details>
+  </section>
+
+  <footer>
+    Part of the <a href="/">Polyhydra Skills</a> catalog. Requires
+    <a href="https://claude.com/product/claude-code">Claude Code</a>.
+  </footer>
+
+</div>
+</body>
+</html>

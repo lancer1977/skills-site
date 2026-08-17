@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>sage-code-index — Polyhydra Skills</title>
+<meta name="description" content="Search Sage&#x27;s code index before doing an ad-hoc repository sweep. Use when asked &quot;find duplicate logic&quot;, &quot;does this pattern exist elsewhere&quot;, &quot;what touches X across my repos&quot;, or whether code should b">
+<link rel="stylesheet" href="/assets/style.css">
+</head>
+<body>
+<div class="page">
+
+  <p class="eyebrow"><a href="/">Polyhydra Skills</a> &nbsp;/&nbsp; Dev Tools</p>
+  <h1>sage-code-index</h1>
+  <p class="tagline">Search Sage&#x27;s code index before doing an ad-hoc repository sweep. Use when asked &quot;find duplicate logic&quot;, &quot;does this pattern exist elsewhere&quot;, &quot;what touches X across my repos&quot;, or whether code should be reused or consolidated across repositories.</p>
+  <div class="badges"><span class="badge">Dev Tools</span></div>
+  <hr class="rule" />
+
+  <div class="install">
+    <p>Drop this in — save the block below as <code>~/.claude/skills/sage-code-index/SKILL.md</code>, or run:</p>
+    <pre>mkdir -p ~/.claude/skills/sage-code-index
+cat &gt; ~/.claude/skills/sage-code-index/SKILL.md &lt;&lt;'EOF'
+# (paste the full source block below into this file)
+EOF</pre>
+  </div>
+
+  <section>
+    <h2>Full source</h2>
+    <details>
+      <summary>SKILL.md — copy everything inside</summary>
+      <pre># Sage code index
+
+Use Sage first for cross-repository code questions. It preserves indexed source
+provenance and avoids a broad, slow grep over every checkout.
+
+## Workflow
+
+1. Discover the connected Sage MCP surface with `tools/list`. Use
+   `list_memories` to recover prior indexing notes, crawl summaries, and earlier
+   duplicate investigations. Query with the behavior, symbol, and domain terms
+   from the request rather than a generic phrase.
+2. Search the authenticated Sage knowledge service with
+   `GET /knowledge/search?query=&lt;terms&gt;&amp;topic=code&amp;limit=&lt;n&gt;`. Keep the
+   returned citations, document namespace (repository), source, location, and
+   provenance with the finding.
+3. For duplicate-logic questions, compare only hits from different namespaces.
+   Treat the result as a candidate until the cited snippets support the same
+   responsibility, inputs, and edge-case behavior; similar names or framework
+   boilerplate are not enough.
+4. If a new code fact is needed, have the indexing job submit it to the
+   authenticated `POST /knowledge/documents` entrypoint. Send `topic`,
+   `namespace`, `text`, optional `tags`, and `provenance` with at least
+   `source` and `where`. Reuse that source/location for updates so Sage
+   upserts the same document instead of accumulating duplicates.
+5. Answer with repository-qualified citations and confidence. Say when the
+   index has no evidence or needs another ingestion job; do not silently fall
+   back to a whole-home grep.
+
+## Guardrails
+
+- Never paste API keys or client secrets into a tool call, prompt, or result.
+  Use the configured Sage client credentials.
+- `list_memories` is useful for prior investigation context, not proof that a
+  code file is current. Prefer knowledge-search hits with source provenance for
+  code claims.
+- Do not claim that two implementations are duplicates solely from retrieval
+  score. Present the evidence and call them candidates when behavior has not
+  been reviewed.</pre>
+    </details>
+  </section>
+
+  <footer>
+    Part of the <a href="/">Polyhydra Skills</a> catalog. Requires
+    <a href="https://claude.com/product/claude-code">Claude Code</a>.
+  </footer>
+
+</div>
+</body>
+</html>

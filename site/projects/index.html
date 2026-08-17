@@ -1,0 +1,345 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>projects — Polyhydra Skills</title>
+<meta name="description" content="Navigate ~/projects -- list hubs with purpose and health, initialize a new hub (single-repo, or multi-repo via project-home), print a briefing block for a new conversation, recommend what to work on n">
+<link rel="stylesheet" href="/assets/style.css">
+</head>
+<body>
+<div class="page">
+
+  <p class="eyebrow"><a href="/">Polyhydra Skills</a> &nbsp;/&nbsp; Agent Workflow</p>
+  <h1>projects</h1>
+  <p class="tagline">Navigate ~/projects -- list hubs with purpose and health, initialize a new hub (single-repo, or multi-repo via project-home), print a briefing block for a new conversation, recommend what to work on next (git-dirty plus PR plus live-session signal), launch a session in a project, capture a stray idea with no home yet, park or activate backlog entries. Use for &quot;what should I work on&quot;, &quot;list my projects&quot;, &quot;set me up on X&quot;, &quot;start a session in X&quot;, &quot;new idea&quot;, &quot;jot this down&quot;, &quot;note this idea for later&quot;, or naming a project under ~/projects.</p>
+  <div class="badges"><span class="badge">Agent Workflow</span></div>
+  <hr class="rule" />
+
+  <div class="install">
+    <p>Drop this in — save the block below as <code>~/.claude/skills/projects/SKILL.md</code>, or run:</p>
+    <pre>mkdir -p ~/.claude/skills/projects
+cat &gt; ~/.claude/skills/projects/SKILL.md &lt;&lt;'EOF'
+# (paste the full source block below into this file)
+EOF</pre>
+  </div>
+
+  <section>
+    <h2>Full source</h2>
+    <details>
+      <summary>SKILL.md — copy everything inside</summary>
+      <pre># projects
+
+Helper for navigating the `~/projects` hub convention (see
+`~/.claude/skills/project-home/SKILL.md` for the scaffolding rules this skill
+delegates to, and `~/projects/LOCAL-WORK-RUNBOOK.md` for the shared local-work
+contract every hub links to).
+
+This skill has six actions: **list**, **init**, **context**, **recommend**,
+**launch**, **idea** (plus park/activate shortcuts). Figure out which the
+user wants from phrasing; if genuinely ambiguous, offer them as
+`AskUserQuestion` options rather than guessing.
+
+## Shared data sources
+
+Two commands feed everything below. Run them once per invocation and reuse
+the output rather than re-running per project.
+
+1. **Audit** (git-dirty / PR-workspace / broken-link signal per hub) —
+   requires `~/code/dev-forge` to be checked out; this skill does not have a
+   fallback if it&#x27;s missing, so say so plainly and skip signal-dependent
+   parts (`recommend`, health flags) rather than guessing:
+
+   ```sh
+   cd ~/code/dev-forge &amp;&amp; python3 tools/project_focus.py \
+     --projects-root ~/projects audit --no-github \
+     --output-dir &quot;$CLAUDE_JOB_DIR/tmp/project-focus&quot; &gt;/dev/null
+   ```
+
+   Then read `$CLAUDE_JOB_DIR/tmp/project-focus/project-focus.json` (or
+   `/tmp/...` outside a background job — see the memory rule about scratch
+   space). Key fields per entry in `active`/`backlog`: `name`, `path`,
+   `dirty_repository_count`, `pr_workspace_count`, `broken_links` (list),
+   `repositories` (each with `branch`, `dirty`, `github_slug`, `path`).
+   `--github` is slow/needs API access; only add it back if the user
+   explicitly wants GitHub issue-hotspot data folded in.
+
+2. **Live sessions**:
+
+   ```sh
+   claude agents --json --all
+   ```
+
+   Each entry has `cwd`, `kind` (`interactive`/`background`), `status`
+   (`busy`/`idle`, interactive only) or `state` (`done`, background only),
+   and `name`. Match to a project by `cwd` starting with the project&#x27;s path
+   (a project can have zero, one, or several sessions open across its
+   repos).
+
+3. **Project codes** — `~/projects/project-codes.yaml` maps each hub&#x27;s
+   directory name to a hand-curated 4-letter code (e.g. `dev-forge` →
+   `DVFG`, `rpgs` → `RPGS`, `xu4` → `XU4X`). It exists so background-job
+   labels are short, memorable, and scannable in `claude agents` — see
+   **launch → Background** below for how it&#x27;s applied. Read this file
+   whenever composing a `-n` label; don&#x27;t invent a code inline.
+
+## Classify a hub&#x27;s shape
+
+Needed by `list`, `init`, and `context`. The flat-vs-structured taxonomy
+(what `workspace.yaml` means) is `project-home`&#x27;s § &quot;Before scaffolding
+anything: check for the two-tier reality&quot; — not re-derived here. This adds
+what that scaffolding-time framing doesn&#x27;t need: a read-time &quot;single-repo
+hub&quot; shape and the purpose-extraction rule per shape, for `~/projects/&lt;name&gt;`:
+
+- **Structured project-home** — has `workspace.yaml`. Purpose comes from its
+  `purpose:` field; repo list from `repositories:`.
+- **Single-repo hub** — has a `main` symlink (or one repo-named symlink,
+  either directly at the hub root or as the sole entry under a `repos/`
+  dir — e.g. `rook`, `peeete`) + `LOCAL-WORK.md`, no `workspace.yaml`.
+  Purpose comes from the first non-blank paragraph of `README.md`/`AGENTS.md`
+  if present, else none. A `repos/&lt;name&gt;` layout with exactly one symlink
+  and no `workspace.yaml` is still this shape, not &quot;structured&quot; — the
+  `repos/` dir alone isn&#x27;t the signal, `workspace.yaml` is.
+- **Flat hub** — multiple top-level repo symlinks, no `workspace.yaml`, no
+  single `main`. Purpose from `README.md` if present.
+- **Other** — doesn&#x27;t match any of the above (rare; describe what&#x27;s actually
+  there rather than forcing a label).
+
+`_backlog/` is not a project — it&#x27;s project_focus.py&#x27;s parking lot. List its
+contents separately, not interleaved with active hubs.
+
+## list
+
+1. `ls ~/projects` (skip `_backlog`, `AGENTS.md`, `LOCAL-WORK-RUNBOOK.md`).
+2. Classify each hub&#x27;s shape (above) and pull its one-line purpose.
+3. Cross-reference the audit JSON for that hub&#x27;s `name` to get dirty-repo
+   count, PR-workspace count, and `broken_links`.
+4. Cross-reference live sessions by `cwd` prefix to show if something&#x27;s
+   actively running there right now.
+5. Render as a table: Name | Shape | Purpose | Signal (e.g. &quot;2 dirty, 1 PR
+   workspace&quot; / &quot;quiet&quot; / &quot;⚠ broken link: X&quot;) | Session (busy/idle/—).
+6. Also list `_backlog/` contents separately as &quot;parked&quot;.
+
+## init
+
+First check both flat-hub and structured-project-home conventions aren&#x27;t
+already a better fit than starting from scratch — re-read
+`~/.claude/skills/project-home/SKILL.md` Step 1–2 if there&#x27;s any chance this
+overlaps an existing hub.
+
+- **One repo** → lightweight scaffold, matching the existing
+  frotz/meme-forge/channel-cheevos convention:
+
+  ```sh
+  mkdir -p ~/projects/&lt;name&gt;
+  ln -s ~/code/&lt;repo&gt; ~/projects/&lt;name&gt;/main
+  ln -s ../LOCAL-WORK-RUNBOOK.md ~/projects/&lt;name&gt;/LOCAL-WORK.md
+  ```
+
+  Write a short `README.md` with the purpose (ask the user for one line if
+  it&#x27;s not obvious from the repo&#x27;s own README). Don&#x27;t pre-create `prs/`,
+  `.claude/`, or other directories that only make sense once they&#x27;re
+  actually needed — those get created by the workflows that need them.
+
+  Also assign the new hub a 4-letter code: pick something memorable derived
+  from the name, check it against the existing values under `codes:` in
+  `~/projects/project-codes.yaml`, and add the new `&lt;name&gt;: &lt;CODE&gt;` entry
+  (bump a letter if it collides — don&#x27;t silently reuse one). Do this for
+  both scaffold paths below, not just the lightweight one.
+
+- **Multiple repos** → don&#x27;t duplicate the scaffolding logic here. Invoke
+  the `project-home` skill (`Skill` tool, `skill: &quot;project-home&quot;`) and let
+  it run its full candidate-finding / dedup / workspace.yaml flow.
+
+If it&#x27;s not obvious which shape applies (e.g. &quot;set up a hub for X&quot; with an
+unclear repo count), ask via `AskUserQuestion` before scaffolding — per the
+answered scoping question, default to the lightweight single-repo path only
+when there&#x27;s genuinely one repo in scope.
+
+## idea &lt;text&gt;
+
+Low-friction capture for a stray idea that has no home yet -- don&#x27;t scaffold
+a hub, don&#x27;t write a GitHub issue, just record it in one line so it isn&#x27;t
+lost.
+
+1. If `~/projects/_ideas.md` doesn&#x27;t exist yet, create it with:
+
+   ```markdown
+   # Ideas
+
+   Append-only. One line per idea: `- [ ] YYYY-MM-DD: &lt;idea text&gt;`. Check
+   off (`[x]`) when promoted or dropped -- add ` (-&gt; &lt;hub/issue&gt;)` or
+   ` (dropped)` after checking. Never delete a line; the checked-off history
+   is the log of what got looked at.
+   ```
+
+2. Append one line: `- [ ] &lt;today&#x27;s date&gt;: &lt;idea text&gt;`, using the user&#x27;s
+   own phrasing -- don&#x27;t polish it (same rule as dev-forge&#x27;s
+   `workflows/work-intake.md`).
+3. That&#x27;s the whole action -- no confirmation prompt for the append itself,
+   that would defeat &quot;low friction&quot;. Only reach for the standard end-of-turn
+   picker if there&#x27;s a real next question (e.g. promote now vs leave it).
+
+### Promoting an idea
+
+When an idea from `_ideas.md` is ready to become real work, pick a lane:
+
+- **New project hub** -- run `init` above, then check the line off with
+  `(-&gt; &lt;hub-name&gt;)`.
+- **GitHub issue in an existing repo** -- feed the idea&#x27;s text into
+  dev-forge&#x27;s intake template (`~/code/dev-forge/workflows/work-intake.md`)
+  as the `Context` field, then check the line off with
+  `(-&gt; &lt;repo&gt;#&lt;issue&gt;)`.
+- **Dropped** -- check it off with `(dropped)` and a short reason if it&#x27;s
+  not obvious why.
+
+## context &lt;project&gt;
+
+Produces a briefing to prime a new conversation on a project — either to
+paste as an opening message, or to just orient the current conversation
+before starting work.
+
+1. Resolve `~/projects/&lt;name&gt;`, confirm it exists (offer `list` output if
+   not, don&#x27;t guess a close match silently).
+2. Classify shape, get purpose, get repo list (see above).
+3. For each repo: current branch + dirty status (from the audit JSON if it&#x27;s
+   fresh, else `git -C &lt;path&gt; status --short --branch` directly).
+4. Any live sessions already open there (from `claude agents --json`) — if
+   one exists, lead with that; opening a second session on the same dirty
+   state is a common way to create merge conflicts with yourself.
+5. Note PR workspaces / worktrees present (`pr_workspace_count`,
+   `worktrees/` dir listing).
+6. Compose a compact briefing: purpose, repo(s) + branch + dirty state,
+   active sessions, anything from `LOCAL-WORK-RUNBOOK.md` §1 that&#x27;s specific
+   to this hub (e.g. `main` vs `~/code/&lt;repo&gt;` resolution), and any
+   project-specific runbook file if one exists (`AGENTS.md`, `PORTAL.md`,
+   `*-WORK-LOG.md` in the hub root).
+
+## recommend
+
+Combine the audit JSON with live sessions to rank what&#x27;s worth attention,
+not just what&#x27;s busy:
+
+0. **Open ideas** -- if `~/projects/_ideas.md` exists, count unchecked
+   (`- [ ] `) lines and surface the count plus the single oldest open one as
+   a low-priority nudge. Don&#x27;t fetch or analyze anything else about it --
+   this is a cheap grep, not part of the audit JSON. Skip silently if the
+   file doesn&#x27;t exist yet.
+1. **Needs attention** — dirty repos or PR workspaces with *no* live
+   session. This is state that could get forgotten; surface first.
+2. **Resume** — an *idle* session sitting on a project with dirty state.
+   Picking this back up is cheap since the session&#x27;s still warm.
+3. **In progress** — a *busy* session. Informational only; don&#x27;t suggest
+   switching away from active work without reason.
+4. **Parking candidates** — quiet locally, no session, present in the
+   audit&#x27;s own `parking_candidates`/`next_action` fields. Low priority, but
+   worth naming so `_backlog` doesn&#x27;t silently grow stale.
+
+Broken links (`broken_links` non-empty) are a separate flag, not a priority
+tier — mention them wherever they show up, they&#x27;re a hygiene issue not a
+work signal.
+
+Present the ranked list, then end (per this user&#x27;s standing MAID
+preference) with `AskUserQuestion` offering the top 2-3 candidates plus
+&quot;show full list&quot; and &quot;none of these&quot; as tappable options — not prose to
+reply to.
+
+## launch
+
+Two independent choices: **where** the session lands, and **how** it runs.
+Settle &quot;where&quot; first — it&#x27;s the one with consequences.
+
+### Where: hub root vs repo
+
+cwd at launch is the only thing that scopes a session (there is no `--cwd`
+flag), and it keys `claude -c`, `/resume`, the session&#x27;s memory dir under
+`~/.claude/projects/`, and CLAUDE.md/AGENTS.md discovery.
+
+- **Hub root** (`~/projects/&lt;name&gt;`) — cross-repo context: the hub&#x27;s
+  `README.md`, `AGENTS.md`, `PORTAL.md` are all in scope. As of 2026-08-10
+  `~/projects` is itself a git repo (`Polyhydra-Games/projects-hub`), but it
+  versions **only hub-level documents** — READMEs, `AGENTS.md`, `PORTAL.md`,
+  `workspace.yaml`. It does not track the `repos/` symlinks or any code. So a
+  hub-root session can commit planning and doc changes, and gets no git over
+  any actual code repo. Right for planning, triage, and cross-repo
+  coordination.
+- **Repo** (`~/code/&lt;repo&gt;`, bridged with `--add-dir ~/projects/&lt;name&gt;`) —
+  git over the code itself: worktree isolation, commits, `/code-review`, and
+  background jobs that can isolate. The hub docs stay in scope via
+  `--add-dir`. Right for anything that will touch code.
+
+Pick the repo form whenever the opening prompt implies edits. When it&#x27;s
+genuinely a toss-up, offer both via `AskUserQuestion`.
+
+**The symlink trap:** `cd ~/projects/&lt;name&gt;/repos/&lt;repo&gt; &amp;&amp; claude` is *not*
+a hub-scoped session. Claude Code takes the physical cwd, so it silently
+resolves to `~/code/&lt;repo&gt;` — the hub&#x27;s docs drop out of context and history
+lands under a different project dir than expected. Never rely on the symlink
+path; go to `~/code/&lt;repo&gt;` and pass `--add-dir` explicitly.
+
+### How: background vs interactive
+
+- **Background** — can be run directly from here. Shell functions are *not*
+  available to the Bash tool (they&#x27;re guarded to interactive shells), so use
+  the full commands:
+  ```sh
+  cd ~/projects/&lt;name&gt; &amp;&amp; claude --bg -n &quot;&lt;CODE&gt;-&lt;slug&gt;&quot; &quot;&lt;opening prompt&gt;&quot;
+  cd ~/code/&lt;repo&gt; &amp;&amp; claude --bg -n &quot;&lt;CODE&gt;-&lt;slug&gt;&quot; --add-dir ~/projects/&lt;name&gt; &quot;&lt;opening prompt&gt;&quot;
+  ```
+  Always pass `-n` — without a label the agents are hard to tell apart in
+  `claude agents`, which is how they&#x27;re managed afterward. Look `&lt;CODE&gt;` up
+  in `~/projects/project-codes.yaml` for the hub the job belongs to (add an
+  entry per the **init** step if the hub predates the registry and is
+  missing one); `&lt;slug&gt;` is a short kebab-case description of the task, e.g.
+  `DVFG-fix-swarm-tag-shadowing`. The code is what makes a busy `claude
+  agents --all` list scannable by project and lets threads about the same
+  project be tied together on sight even across separate sessions — the
+  label itself is not a session ID, so two jobs on the same hub can share a
+  code with different slugs.
+- **Interactive** — needs the user&#x27;s own terminal; a skill can&#x27;t hand off a
+  TTY, so print a command for them to run. Prefer their launcher shortcuts
+  (defined in `~/.config/claude-projects-shell.sh`, tab-completing on hub and
+  repo names) over raw `cd` lines:
+
+  | | shortcut | equivalent |
+  |---|---|---|
+  | hub root | `p &lt;name&gt;` | `cd ~/projects/&lt;name&gt; &amp;&amp; claude` |
+  | repo | `pw &lt;name&gt; &lt;repo&gt;` | `cd ~/code/&lt;repo&gt; &amp;&amp; claude --add-dir ~/projects/&lt;name&gt;` |
+  | just cd | `pcd &lt;name&gt;` | `cd ~/projects/&lt;name&gt;` |
+
+  `pw`&#x27;s repo argument is optional when the hub has exactly one repo, and
+  trailing arguments pass through to `claude` (`p &lt;name&gt; -c`, `p &lt;name&gt;
+  --bg -n &lt;label&gt; &quot;&lt;prompt&gt;&quot;`).
+
+## park / activate
+
+Thin wrappers over project_focus.py&#x27;s own commands — don&#x27;t reimplement the
+move logic:
+
+```sh
+cd ~/code/dev-forge &amp;&amp; python3 tools/project_focus.py --projects-root ~/projects park &lt;name&gt; [--dry-run]
+cd ~/code/dev-forge &amp;&amp; python3 tools/project_focus.py --projects-root ~/projects activate &lt;name&gt; [--dry-run]
+```
+
+Run with `--dry-run` first and show the user what would move before doing it
+for real — moving a hub&#x27;s top-level directory is exactly the kind of thing
+worth a quick confirmation, even though it&#x27;s a `shutil.move` (reversible)
+rather than a delete.
+
+## Ending a turn
+
+Every handback here still ends in a picker — see CLAUDE.md&#x27;s MAID section
+for the rule, not restated here. Real next actions for this skill: open a
+project, launch a session, park/activate, refine the recommendation, stop
+here.</pre>
+    </details>
+  </section>
+
+  <footer>
+    Part of the <a href="/">Polyhydra Skills</a> catalog. Requires
+    <a href="https://claude.com/product/claude-code">Claude Code</a>.
+  </footer>
+
+</div>
+</body>
+</html>

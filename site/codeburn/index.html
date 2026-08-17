@@ -1,0 +1,302 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>codeburn — Polyhydra Skills</title>
+<meta name="description" content="Launch, monitor, and stop the portfolio Burn Console, and run an agent-driven portfolio burn — rank every open issue smallest-first, filter out work that is already done, split it into Codex worker ba">
+<link rel="stylesheet" href="/assets/style.css">
+</head>
+<body>
+<div class="page">
+
+  <p class="eyebrow"><a href="/">Polyhydra Skills</a> &nbsp;/&nbsp; GitHub &amp; Delivery</p>
+  <h1>codeburn</h1>
+  <p class="tagline">Launch, monitor, and stop the portfolio Burn Console, and run an agent-driven portfolio burn — rank every open issue smallest-first, filter out work that is already done, split it into Codex worker batches, review the resulting PRs, and close verified-complete issues with evidence. Use when the user says &quot;start the burn console&quot;, &quot;check burn status&quot;, &quot;stop the burn&quot;, &quot;codeburn</p>
+  <div class="badges"><span class="badge">GitHub &amp; Delivery</span></div>
+  <hr class="rule" />
+
+  <div class="install">
+    <p>Drop this in — save the block below as <code>~/.claude/skills/codeburn/SKILL.md</code>, or run:</p>
+    <pre>mkdir -p ~/.claude/skills/codeburn
+cat &gt; ~/.claude/skills/codeburn/SKILL.md &lt;&lt;'EOF'
+# (paste the full source block below into this file)
+EOF</pre>
+  </div>
+
+  <section>
+    <h2>Full source</h2>
+    <details>
+      <summary>SKILL.md — copy everything inside</summary>
+      <pre># CodeBurn — Launch &amp; Monitor the Burn Console
+
+Code lives in `~/code/dev-forge/` (scripts, console UI, burn harness). All working
+state — logs, run configs, cloned repos — lives in `~/.codeburn/`, never touched by
+the dev-forge code itself.
+
+Implementation: `~/.claude/skills/codeburn/codeburn-impl.sh` — a single dispatcher
+script with `start | status | stop | logs [N]` subcommands.
+
+## Usage
+
+```bash
+bash ~/.claude/skills/codeburn/codeburn-impl.sh start      # launch console, background, logged
+bash ~/.claude/skills/codeburn/codeburn-impl.sh status     # server health + active burn + queue state
+bash ~/.claude/skills/codeburn/codeburn-impl.sh stop       # pause scheduler, graceful shutdown, final report
+bash ~/.claude/skills/codeburn/codeburn-impl.sh logs [50]  # tail console log
+```
+
+Run these via the Bash tool. There is no registered `/codeburn` slash command —
+invoke this skill (`Skill({skill: &quot;codeburn&quot;})`) or call the script directly.
+
+## What each subcommand does
+
+**start** — ensures `~/.codeburn/{logs,state/runs,repos}` exist, launches
+`tools/burn_console/app.py` on `localhost:8377` detached (nohup), writes PID to
+`~/.codeburn/.pid`, redirects output to `~/.codeburn/logs/console.log`.
+
+**status** — checks whether port 8377 is live, lists planned/running runs via
+`code_burn.py list`, tails the last 10 log lines. If a burn is active, also flags:
+queue stalls (pending &gt; 0, claimed == 0 for a while), repos nearing `max_attempts`,
+and any `completed`-but-no-real-PR discrepancy from `portfolio_burn_status.sh --verify`.
+
+**stop** — calls `code_burn.py pause_scheduler` (let in-flight work finish), SIGTERMs
+the console (SIGKILL after 10s if needed), runs `portfolio_burn_status.sh --verify`
+and saves the result to `~/.codeburn/logs/final-report-&lt;timestamp&gt;.txt`, removes the PID file.
+
+**logs [N]** — tails the last N lines (default 50) of `~/.codeburn/logs/console.log`.
+
+## Directory layout
+
+```
+~/.codeburn/
+  .pid                       console server PID
+  logs/
+    console.log              server stdout/stderr
+    final-report-*.txt       post-stop verified reports
+  state/runs/                code_burn.py run manifests + derived pilot configs
+  repos/&lt;name&gt;/              repos cloned via --clone-missing (never ~/code checkouts)
+```
+
+## Config overrides
+
+- `CODEBURN_HOME` — default `~/.codeburn`
+- `CODEBURN_PORT` — default `8377`
+- `CODEBURN_DEV_FORGE` — default `~/code/dev-forge`
+
+## Safety
+
+Read-only monitoring — status only reports and suggests (e.g. &quot;consider pausing
+repo X&quot;), never pauses a repo or edits a run without the user confirming. `stop`
+is the only subcommand that mutates state, and it only pauses/shuts down cleanly.
+
+---
+
+# Portfolio burn — the agent-driven pipeline
+
+Separate from the console above: a repeatable sequence for &quot;rack and stack the
+open issues and close as much as possible&quot;, driven by subagents rather than the
+web app. Scripts in `~/.claude/skills/codeburn/scripts/`. Derived from Codeburn
+#5 (2026-08-10), which ranked 1,064 issues, opened 34 draft PRs and closed 90
+verified-complete issues.
+
+## The finding that shapes the whole pipeline
+
+**Roughly half of a mature backlog is finished work whose issues were never
+closed.** In burn #5, workers found 23 of the 50 issues they were handed already
+satisfied on the default branch; verification sweeps then confirmed 90 more.
+
+So verification is not a nice-to-have step after implementation — it is the
+higher-yield half of the work, and it runs *first*. Implementing without it
+wastes about half of every worker cycle.
+
+**But that yield is repo-dependent, and by burn #8 it had collapsed.** Burn #8&#x27;s
+verification lane found **1 satisfied out of 45** — the backlog had already been
+swept twice, so what remained was genuinely unfinished. Measured by repo:
+
+    non-dev-forge   burn #5: 15/17 satisfied
+    dev-forge       burn #5:  9/28, burn #8: 0/25
+
+The heuristic decays as it succeeds: each burn closes the finished work, so the
+next burn&#x27;s &quot;likely done&quot; pool is mostly residue. For dev-forge&#x27;s Delivery Stop
+Rule follow-ups it now carries no information at all. Before sizing verification
+lanes, check how recently the backlog was swept — on a freshly-swept portfolio,
+put the workers on implementation and merging instead. Verification-first is the
+right default for a *stale* backlog, not a law.
+
+## Sequence
+
+```bash
+S=~/.claude/skills/codeburn/scripts
+D=~/.codeburn/logs/burn8            # one directory per burn
+
+python3 $S/rack.py --owner lancer1977 --out $D            # 1. rank every open issue
+python3 $S/stale_filter.py --dir $D --owner lancer1977    # 2. split done-vs-real
+python3 $S/repo_policy.py --owner lancer1977 \
+        --repos $D/repos.txt --out $D/policy.json         # 3. READ REPO POLICY FIRST
+python3 $S/batch.py --pool $D/fresh.json --dir $D \
+        --workers 4 --prefix b8 --tag implement \
+        --policy $D/policy.json                           # 4a. implementation lanes
+python3 $S/batch.py --pool $D/likely_done.json --dir $D \
+        --workers 2 --prefix b8v --tag verify \
+        --policy $D/policy.json                           # 4b. verification lanes
+# 4. spawn one subagent per brief (see &quot;Worker briefs&quot; below)
+bash $S/review_prs.sh --owner lancer1977 --prefix b8/ \
+        --dir $D --repos $D/repos.txt                     # 5. advisory PR review
+python3 $S/close_verified.py --owner lancer1977 \
+        --list $D/close-list.json --dry-run               # 6. dry run, then --apply
+bash $S/notify.sh &quot;burn #8: ...&quot;                          # any point
+```
+
+## Scoring
+
+`rack.py` answers one question: how likely is this to be one surgical diff plus a
+test? Body length dominates; checklist depth is next; comment count stands in for
+contested scope. Title words like `typo`/`docs`/`follow-up`/`test` lift a score,
+`epic`/`roadmap`/`migration`/`phase`/`tier` cut it. `scope:epic`, `blocked:*` and
+`parked` are excluded outright rather than ranked low. Bands: XS ≥48, S ≥36,
+M ≥20, L ≥0, XL below.
+
+It says nothing about whether an issue *matters*. A critical fix and a docs typo
+can score alike — this ranks tractability, never priority.
+
+## Worker briefs — what the subagents must be told
+
+Each brief file is self-contained; the agent still needs these constraints:
+
+- **Scratch root** under the job tmp dir, one per worker. Never `/tmp` — it is a
+  shared tmpfs that fills and fails with &quot;Disk quota exceeded&quot;.
+- **Never touch `~/code/` checkouts.** They are dirty and in use. Clone fresh.
+- One branch and one draft PR per issue, `&lt;prefix&gt;/issue-&lt;N&gt;-&lt;slug&gt;`.
+- Never push to a shared branch, merge, or close an issue.
+- **Force-push:** say what you actually mean, because &quot;never force-push&quot; is
+  ambiguous and a worker will hit the gap. Allowed: `--force-with-lease` on the
+  worker&#x27;s *own* topic branch, before any PR exists on it — amending after a
+  gate round is normal and a burn #7 worker correctly disclosed doing it.
+  Forbidden: any force-push to `main`, to a branch with an open PR, or to a
+  branch another worker created. Plain `--force` is never allowed.
+- **Rebase before opening the PR.** Branches go stale fast when several workers
+  share a repo; see the rebase trap below.
+- Every PR needs a regression test that **fails on the pre-change code** — proven
+  by stashing only the source change and re-running, with the failure count in
+  the PR body. Never fake a green.
+- **Check current main before writing code**, even on a filtered pool.
+- If an issue is not actually small, skip it and say why. Partial honesty beats
+  a padded table.
+
+Verification lanes get a different contract: read-only, verdicts of `satisfied` /
+`partial` / `stale` / `still-open` / `unverifiable`, evidence must be a
+`path:LINE` citation or a named negative search, bias toward `still-open` when
+uncertain, and never close anything.
+
+## Repo policy is not self-enforcing — read it (step 3)
+
+`repo_policy.py` reads each target repo&#x27;s `AGENTS.md` and enabled
+`.claude/hookify.*` block rules, and `batch.py --policy` stamps the result into
+every brief as a &quot;READ BEFORE OPENING ANY PR&quot; header.
+
+This step exists because burn #5 opened **40 dev-forge PRs with `gh pr create`**
+when that repo requires a guarded entrypoint that runs the local pre-PR gate,
+verifies the reviewed head did not change, and stages the draft with verified
+head/base. The hookify rule that should have blocked it is scoped to the repo&#x27;s
+working directory, and the workers ran from clones elsewhere — so nothing fired
+and nothing warned. **A repo rule you did not read is a rule you will break from
+a clone.** Never write worker briefs from a template; generate the PR command
+from the target repo.
+
+Retroactive fix if it happens anyway: dev-forge&#x27;s entrypoint takes
+`--check-only`, which runs the real gate and exact-head checks without creating
+anything. Use `--mode light` for a batch sweep; strong is the documented default
+and costs accordingly.
+
+## Traps that have actually bitten
+
+- **A merged PR referencing an issue is not proof it is resolved.** dev-forge&#x27;s
+  &quot;Delivery Stop Rule&quot; follow-ups cite the *source* PR whose review spawned them,
+  so a merged source PR makes untouched follow-up work look done. In burn #5 the
+  non-dev-forge hit rate was 15/17 satisfied but dev-forge only 9/28 — same
+  signal, opposite meaning, depending on repo convention.
+- **Reused review clones go stale.** Fetch `--prune` before deriving the base or
+  every later branch diff carries the base&#x27;s newer commits. This produced ~10
+  confident, entirely fictional findings in burn #5.
+- **A branch behind its base yields false &quot;this rolls back X&quot; findings**, because
+  base-only commits read as removals. `review_prs.sh` records a behind-count and
+  an `in_pr` flag; treat any finding whose file the PR does not touch as an
+  artifact. Always cross-check findings against `gh pr view --json files`.
+- **`codex exec` inherits the caller&#x27;s stdin** and will swallow a read loop&#x27;s
+  remaining lines. Redirect the child from `/dev/null` and read on fd 3.
+- **`codex exec` can run ~10 minutes on a single issue.** Tell workers to kill it
+  past that and hand-implement; the goal is closed issues, not Codex purity.
+- **Stale branches block review entirely, not just merging.** In burn #5, 33 of
+  40 branches could not be gated at all — &quot;reconcile the branch with current
+  origin/main before independent review&quot; — because main moved 1–6 commits under
+  them while other workers landed PRs. Only 7 were reviewable. Any batch review
+  or gate run must rebase first, or most of it silently measures nothing. Have
+  workers rebase immediately before opening each PR, not once at clone time.
+- **A guarded PR entrypoint may mark the PR ready, not draft.** dev-forge&#x27;s does.
+  If the run is meant to leave everything in draft, say so explicitly in the
+  final report rather than assuming the worker chose it.
+
+## Merge sweeps — what burn #8 learned
+
+Burn #8 merged 49 PRs and took org-wide open PRs from 112 to 71. The sweep itself
+has failure modes the implementation lanes do not:
+
+- **Merging N PRs into one repo cascades conflicts.** 41 merges landed, then 7
+  dev-forge PRs failed with &quot;Pull Request has merge conflicts&quot; — each merge moved
+  main under the ones behind it. Expect the tail of a same-repo batch to conflict
+  and budget time to resolve it, or merge smallest-first and re-check between.
+- **Resolve by merging main INTO the branch, never by rebasing.** These branches
+  have open PRs, so rebasing them requires a force-push, which is forbidden. A
+  merge commit is additive and pushes cleanly.
+- **dev-forge conflicts concentrate in generated artifacts**, not real code:
+  `docs/skills/*.json` and `plugins/*/provenance.json`. Take main&#x27;s copy and
+  regenerate. Both generators are needed and they are not the same tool:
+  `tools/generate_skill_inventory.py` for the inventories, and
+  `tools/skill_packaging.py &lt;skill&gt;` for packaged plugin copies + provenance.
+  Regenerating only the first leaves `provenance out of sync` and the &quot;Plan and
+  run affected checks&quot; gate fails — this cost a full extra CI round trip.
+- **A merge sweep saturates a single self-hosted runner.** 41 merges plus 8
+  branch pushes plus worker PRs queued 76 workflow runs behind one runner,
+  draining at roughly 4/minute. Everything downstream — including the workers&#x27;
+  own PRs — stalls behind it. On a self-hosted setup, merge in waves rather than
+  one burst, or accept that nothing validates for the next hour.
+- **Pushing a conflict fix invalidates an exact-head review gate.** dev-forge&#x27;s
+  Codex Review Gate requires a review bound to the exact head SHA, so resolving a
+  conflict re-blocks the PR on review even though its real checks now pass. Fixing
+  the conflict does not get the PR merged; it just moves it to a different queue.
+- **No branch protection means green is not a gate, it is a hint.** Nothing in
+  these repos stops a bad merge. Scan every candidate diff for weakened tests and
+  disabled checks before landing. A cheap automated pass over `+` lines for
+  `continue-on-error`, skip markers, `verify=False`, `permissions: write-all` and
+  removed test functions caught 2 of 48 for review — both turned out benign, but
+  the scan is what made merging 48 PRs defensible rather than reckless.
+
+## Closing issues
+
+`close_verified.py` defaults to `--dry-run` and refuses any row whose evidence is
+shorter than 12 characters. Feed it only `satisfied` and `stale` verdicts — never
+`partial`, `still-open` or `unverifiable`. Each close posts its evidence, uses
+reason `completed`, and states that the check was static analysis of the default
+branch, so a wrong call is cheap to reopen.
+
+Bulk-closing is outward-facing. Get the user&#x27;s explicit go-ahead on the list
+first; a picker selecting &quot;close them&quot; is that go-ahead, a picker selecting a
+*direction* is not.
+
+## Discord
+
+`notify.sh` posts to the user&#x27;s DM plus `#dev-forge` by default. Override with
+`CODEBURN_DISCORD_CHANNELS` (comma-separated IDs) or `CODEBURN_DISCORD_DM=0`.
+Report progress per worker milestone, not per issue.</pre>
+    </details>
+  </section>
+
+  <footer>
+    Part of the <a href="/">Polyhydra Skills</a> catalog. Requires
+    <a href="https://claude.com/product/claude-code">Claude Code</a>.
+  </footer>
+
+</div>
+</body>
+</html>

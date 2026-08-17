@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>mapped-frontier-development — Polyhydra Skills</title>
+<meta name="description" content="Plan and execute issue-backed work with Mapped-Frontier Development (MFD), also called STDD. Use when a request mentions MFD, Mapped-Frontier, STDD, Phase 0, a build packet, an approval brief, or when">
+<link rel="stylesheet" href="/assets/style.css">
+</head>
+<body>
+<div class="page">
+
+  <p class="eyebrow"><a href="/">Polyhydra Skills</a> &nbsp;/&nbsp; GitHub &amp; Delivery</p>
+  <h1>mapped-frontier-development</h1>
+  <p class="tagline">Plan and execute issue-backed work with Mapped-Frontier Development (MFD), also called STDD. Use when a request mentions MFD, Mapped-Frontier, STDD, Phase 0, a build packet, an approval brief, or when a material product, architecture, security, deployment, or operational change needs durable scope and evidence before implementation. Ported from a Codex plugin — GitHub/issue-based, not tied to any Codex-specific tooling.</p>
+  <div class="badges"><span class="badge">GitHub &amp; Delivery</span></div>
+  <hr class="rule" />
+
+  <div class="install">
+    <p>Drop this in — save the block below as <code>~/.claude/skills/mapped-frontier-development/SKILL.md</code>, or run:</p>
+    <pre>mkdir -p ~/.claude/skills/mapped-frontier-development
+cat &gt; ~/.claude/skills/mapped-frontier-development/SKILL.md &lt;&lt;'EOF'
+# (paste the full source block below into this file)
+EOF</pre>
+  </div>
+
+  <section>
+    <h2>Full source</h2>
+    <details>
+      <summary>SKILL.md — copy everything inside</summary>
+      <pre># Mapped-Frontier Development
+
+Use MFD to make the approved product boundary explicit before substantial
+implementation, then prove delivery against that boundary. This process is
+tool-agnostic: it runs on GitHub issues/PRs and plain files, so it works the
+same way under Claude Code as it did under Codex.
+
+## Start with the authority
+
+1. Identify or create the owning GitHub issue before planning implementation.
+2. Read repository-local `AGENTS.md` / `CLAUDE.md` files and the canonical
+   standard named in `references/canonical-sources.md`.
+3. Copy `assets/mapped-frontier-build-packet.md` for new Phase 0 work.
+4. For small changes, record the rationale for the small-change path on the
+   issue. Do not silently bypass MFD when behavior, risk, or scope is material.
+
+## Phase 0 and approval
+
+- Map intent, existing behavior, journeys and failure states, UI proof where
+  applicable, technical/security/data/operational boundaries, verification,
+  delivery, rollback, and unresolved decisions.
+- Record runner capability and trust needs. Distinguish deterministic local
+  validation, runner-backed CI, and live-host proof; require exact labels and a
+  repository-scoped assignment or provisioning blocker, and never fall back to
+  an unrelated repository runner.
+- Map each durable requirement to a scenario and validation.
+- Submit one approval brief (`assets/mapped-frontier-approval-brief.md`) on the
+  owning issue that names an immutable packet revision. Do not treat a moving
+  branch, chat summary, or a card status as approval evidence.
+- Do not start material implementation until the product owner records
+  `Approved` for that immutable revision.
+
+## Execute and close
+
+- Stay within the approved observable behavior and risk boundaries. Return a
+  focused deviation brief when a user-visible, API, auth, data, security,
+  deployment, rollback, availability, cost, or accessibility boundary changes.
+- Keep GitHub as the authority for issues, PRs, reviews, CI, merges, releases,
+  and delivery state. If this repository has its own higher-precedence DevOps
+  contract (e.g. a GitHub-Kanban policy in `AGENTS.md`/`CLAUDE.md`), that takes
+  precedence for infrastructure, security, deployment, GitOps, and service work.
+- Use the repository&#x27;s normal exact-head review, CI, release-authority, and
+  live-verification gates. Phase 0 approval never authorizes merge, deployment,
+  issue closure, secret access, or a production-success claim.
+- Reconcile the approved map against the exact PR, validation, deployment/live
+  evidence where applicable, deviations, rollback evidence, and deferred
+  follow-ups before declaring work complete.
+
+## Resources
+
+- `assets/mapped-frontier-build-packet.md` — copy for a new Phase 0 packet.
+- `assets/mapped-frontier-approval-brief.md` — copy for the issue decision.
+- `references/canonical-sources.md` — canonical policy and source ownership.
+- `provenance.json` — hashes proving the bundled templates match their
+  immutable source revisions from the original `mapped-frontier-development`
+  and `mapped-frontier-core` repos.</pre>
+    </details>
+  </section>
+
+  <footer>
+    Part of the <a href="/">Polyhydra Skills</a> catalog. Requires
+    <a href="https://claude.com/product/claude-code">Claude Code</a>.
+  </footer>
+
+</div>
+</body>
+</html>

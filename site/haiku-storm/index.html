@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>haiku-storm — Polyhydra Skills</title>
+<meta name="description" content="Fan out a batch of independent, well-specified housekeeping/recon/mechanical work across several parallel Haiku subagents at once instead of working through it serially. Use on &quot;haiku storm&quot;, &quot;storm t">
+<link rel="stylesheet" href="/assets/style.css">
+</head>
+<body>
+<div class="page">
+
+  <p class="eyebrow"><a href="/">Polyhydra Skills</a> &nbsp;/&nbsp; Agent Workflow</p>
+  <h1>haiku-storm</h1>
+  <p class="tagline">Fan out a batch of independent, well-specified housekeeping/recon/mechanical work across several parallel Haiku subagents at once instead of working through it serially. Use on &quot;haiku storm&quot;, &quot;storm this&quot;, or when there&#x27;s a pile of low-ambiguity work (close stale issues, clean up merged worktrees, survey a backlog, verify-and-report tasks) that splits cleanly into 3-5 independent lanes. Not for work that needs judgment, touches files another in-flight task is actively editing, or requires a GitHub issue that doesn&#x27;t exist yet.</p>
+  <div class="badges"><span class="badge">Agent Workflow</span></div>
+  <hr class="rule" />
+
+  <div class="install">
+    <p>Drop this in — save the block below as <code>~/.claude/skills/haiku-storm/SKILL.md</code>, or run:</p>
+    <pre>mkdir -p ~/.claude/skills/haiku-storm
+cat &gt; ~/.claude/skills/haiku-storm/SKILL.md &lt;&lt;'EOF'
+# (paste the full source block below into this file)
+EOF</pre>
+  </div>
+
+  <section>
+    <h2>Full source</h2>
+    <details>
+      <summary>SKILL.md — copy everything inside</summary>
+      <pre># Haiku storm
+
+Dispatch several Haiku subagents in parallel, each carrying one independent,
+self-contained lane of low-ambiguity work, and let them report back
+concurrently instead of grinding through the list one item at a time.
+
+This is the &quot;keep the forge well stocked&quot; pattern: while you (the
+orchestrator) do the sequential, judgment-heavy work only you can do — merge
+conflict resolution, architectural decisions, PR review — the storm clears
+everything around it that doesn&#x27;t need that judgment.
+
+## When to reach for this
+
+Good storm material is **verify-and-act** or **survey** work, not
+**design** work:
+
+- Closing GitHub issues that are already resolved on `main`/`dev` but never
+  got closed (verify the fix landed, cite the commit, close with a comment)
+- Cleaning up merged-but-still-present git worktrees (confirm branch is
+  merged and working tree is clean before removing)
+- Surveying an open-issue backlog to shortlist the next batch of
+  independent, well-scoped candidates (read-only, no mutations)
+- Mechanical fixes with an established pattern to follow (e.g. &quot;stub the
+  missing dependency the same way the last five slices did&quot;)
+- Repairing/retiring dead code flagged by a &quot;good first issue&quot;-style issue
+
+Bad storm material — keep this on yourself or a Sonnet lane instead:
+
+- Anything requiring an architectural call the issue doesn&#x27;t already answer
+- Work that touches a file another in-flight task (yours or a worker&#x27;s) is
+  actively editing — collision risk, not parallelism
+- Code-changing work with no GitHub issue yet — issue-first still applies;
+  a storm dispatches against existing issues, it doesn&#x27;t skip creating them
+- Merge conflict resolution — that stays with the orchestrator, always
+
+## How to run one
+
+1. **Scope 3-5 independent lanes.** Each lane must be completable without
+   knowing what the others are doing, and must not write to a path another
+   lane (or your own in-flight work) touches. If two candidate lanes would
+   touch the same file, that&#x27;s one lane, not two.
+2. **Write each prompt like a ticket**, not a chat message — the subagent
+   can&#x27;t ask a follow-up. Include: exact scope, the verification step
+   before acting (don&#x27;t trust a branch name or issue title alone — confirm
+   the fix is actually on the target branch), the exact `gh`/`git` commands
+   to use, and what to do if the assumption doesn&#x27;t hold (leave it alone
+   and report why, don&#x27;t guess).
+3. **Dispatch together in one message** — multiple `Agent` tool calls,
+   `model: &quot;haiku&quot;`, in a single response so they run concurrently in the
+   background. Don&#x27;t wait on one before sending the next.
+4. **Keep working while they run.** Continue your own sequential thread;
+   the completion notifications arrive on their own schedule.
+5. **Review before trusting.** Each subagent&#x27;s report is a submission, not
+   a verified result — skim what it actually closed/removed/found before
+   treating the lane as done. A subagent closing an issue or removing a
+   worktree is a real mutation; scope the prompt tightly enough that you&#x27;re
+   comfortable with it running unattended, and read the report when it
+   lands.
+
+## Worked example (from 2026-08-17, channel-cheevos + CC-Client)
+
+Four lanes dispatched together while the orchestrator resolved a live merge
+conflict:
+
+1. Close CC-Client issues already fixed by merged-but-unlinked branches —
+   verify each fix on `main` before closing, cite the commit.
+2. Close channel-cheevos epic tracking issues whose PRs had merged but
+   never auto-closed — confirm PR state is `MERGED` and the diff matches
+   the issue&#x27;s scope first.
+3. Clean up merged CC-Client worktrees with stray uncommitted lockfile
+   diffs — diff first, discard only confirmed no-op churn, leave anything
+   with real dependency changes in place and flag it.
+4. Read-only survey of both repos&#x27; open-issue backlogs for the next batch
+   of independent, unblocked candidates — no mutations, just a report.
+
+All four ran concurrently; the orchestrator&#x27;s own merge-conflict work
+finished in parallel with them, and every lane&#x27;s report was reviewed before
+being treated as done (lane 3 correctly refused to discard a worktree with
+a real `puppeteer` dependency addition, flagging it back instead of
+guessing).</pre>
+    </details>
+  </section>
+
+  <footer>
+    Part of the <a href="/">Polyhydra Skills</a> catalog. Requires
+    <a href="https://claude.com/product/claude-code">Claude Code</a>.
+  </footer>
+
+</div>
+</body>
+</html>

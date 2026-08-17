@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>infisical-lookup — Polyhydra Skills</title>
+<meta name="description" content="Safely discover which Infisical project/env/path a secret key lives at, or list what keys exist somewhere -- without ever printing, logging, or writing a secret VALUE. Use before adding a sibling secr">
+<link rel="stylesheet" href="/assets/style.css">
+</head>
+<body>
+<div class="page">
+
+  <p class="eyebrow"><a href="/">Polyhydra Skills</a> &nbsp;/&nbsp; Homelab Infra</p>
+  <h1>infisical-lookup</h1>
+  <p class="tagline">Safely discover which Infisical project/env/path a secret key lives at, or list what keys exist somewhere -- without ever printing, logging, or writing a secret VALUE. Use before adding a sibling secret next to an existing one, or any time you need to know &quot;where does key X live&quot; without already knowing the value.</p>
+  <div class="badges"><span class="badge">Homelab Infra</span></div>
+  <hr class="rule" />
+
+  <div class="install">
+    <p>Drop this in — save the block below as <code>~/.claude/skills/infisical-lookup/SKILL.md</code>, or run:</p>
+    <pre>mkdir -p ~/.claude/skills/infisical-lookup
+cat &gt; ~/.claude/skills/infisical-lookup/SKILL.md &lt;&lt;'EOF'
+# (paste the full source block below into this file)
+EOF</pre>
+  </div>
+
+  <section>
+    <h2>Full source</h2>
+    <details>
+      <summary>SKILL.md — copy everything inside</summary>
+      <pre># Infisical Lookup
+
+## Why this exists
+
+The `infisical` CLI has no &quot;key names only&quot; mode. `infisical secrets` (table
+output), `--plain`, and every `-o` format (`json`/`yaml`/`dotenv`) all include
+secret **values**, not just names. There was no existing tool for the very
+common case of &quot;what&#x27;s the key/env/path convention for secrets like this one&quot;
+without already knowing (or wanting to see) the value.
+
+Built after a live incident (2026-08-09): while adding a new sibling secret
+(`GitHub__WebhookSecret`) next to an existing one (`Twitch__WebhookSecret`),
+an un-piped `infisical secrets --recursive` call was run to find where the
+existing key lived. Its output — a full table of real secret values — landed
+in a tool-results file on disk. It was caught and remediated, but the whole
+class of mistake is avoidable.
+
+## The safe technique
+
+Never let `infisical secrets ... -o json` (or any variant) land anywhere as a
+standalone command — its output has values in it. Always pipe it directly
+into `jq` in the same command, so only the **projected key-name list** ever
+becomes visible output. The value-bearing JSON exists only transiently inside
+the pipe between two subprocesses:
+
+```bash
+infisical secrets --projectId &quot;$PROJECT&quot; --env &quot;$ENV&quot; --path &quot;$PATH&quot; \
+  --domain https://secrets.polyhydragames.com/api -o json 2&gt;/dev/null \
+  | jq -r &#x27;.[].secretKey&#x27;
+```
+
+This skill wraps that pattern so it&#x27;s never re-derived (or gotten wrong) from
+scratch under time pressure.
+
+## Commands
+
+```bash
+scripts/infisical-list-folders.sh --project PROJECT_ID [--env ENV] [--path PATH]
+scripts/infisical-list-keys.sh --project PROJECT_ID [--env ENV] [--path PATH] [--recursive] [--find SUBSTRING]
+```
+
+- `infisical-list-folders.sh` — lists folder names under a path. Folder
+  structure is metadata, not secret data, so this is safe without any special
+  handling — use it first to discover the project&#x27;s folder layout (most
+  projects here are organized one-folder-per-external-provider, e.g.
+  `/twitch`, `/kick`, `/spotify`, plus an app-named folder like
+  `/channel-cheevos` for app-specific runtime keys).
+- `infisical-list-keys.sh` — lists secret KEY NAMES (never values) at a
+  project/env/path. Use `--find SUBSTRING` to check &quot;does a key like this
+  already exist&quot; or &quot;where does key X live&quot; across a known folder.
+
+Token resolution (both scripts, in order): `INFISICAL_TOKEN` env var if
+already set; else `INFISICAL_CLIENT_ID`/`INFISICAL_CLIENT_SECRET` (env or
+`~/.config/secrets/infisical.env`) exchanged via `infisical login --method
+universal-auth`. Same resolution order most repos&#x27; `scripts/lib/secrets.sh`
+already use, so it works out of the box on machines already set up for
+homelab work.
+
+## Non-negotiables
+
+- Never run `infisical secrets` (any form) without piping its output straight
+  into `jq` (or discarding it) in the same command. If you need to eyeball
+  raw output to debug a jq filter, redirect to a file under `/dev/shm` (tmpfs,
+  memory-backed) and `shred -u` it immediately after — never a regular disk
+  path, never a path that could end up in a tool-results/transcript capture.
+- **Never run `infisical login ... --plain` (or `--token`, or any flag whose
+  entire job is printing a raw credential) as a standalone command you then
+  view.** These exist to hand a token to the *next* program in a pipeline,
+  not to a human. A second live incident (2026-08-09) happened exactly this
+  way: debugging why `infisical-list-keys.sh` returned nothing, someone ran
+  `infisical login --method universal-auth ... --plain` directly and piped
+  the output to `tail` &quot;to see what happened&quot; — the raw access token landed
+  in a conversation transcript. If a login/token step needs debugging, check
+  the *exit code* and a redacted marker (token non-empty? starts with the
+  expected prefix?) — never the token content itself. If genuinely stuck,
+  read this skill&#x27;s scripts to reason about it statically rather than running
+  the underlying command unfiltered.
+- This skill only ever prints key names, never values. If a task genuinely
+  needs a value (e.g. to complete an external provider&#x27;s webhook setup UI),
+  that&#x27;s a job for a human retrieving it themselves via their own Infisical
+  access (web UI or `infisical secrets get KEY --plain` run directly in their
+  own terminal) — not for an agent to fetch and relay.
+- If a value ever does leak into a file, log, or transcript despite this,
+  treat it as a real exposure: flag it to the operator immediately, don&#x27;t try
+  to quietly clean it up without telling them, and let them decide on
+  rotation.
+
+## Companion
+
+`secret-apply` (same skills directory) is the write-side counterpart — once
+you know where a key needs to live (via this skill), `secret-apply.sh` is
+what actually applies a new/rotated value there without it touching an agent
+transcript.</pre>
+    </details>
+  </section>
+
+  <footer>
+    Part of the <a href="/">Polyhydra Skills</a> catalog. Requires
+    <a href="https://claude.com/product/claude-code">Claude Code</a>.
+  </footer>
+
+</div>
+</body>
+</html>

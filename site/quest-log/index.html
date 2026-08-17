@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>quest-log — Polyhydra Skills</title>
+<meta name="description" content="Use when the user wants to see GitHub issue progress rendered as a retro text-adventure screen instead of a status report — single-issue quest screens, a multi-issue &quot;dungeon map&quot; overview to answer &quot;">
+<link rel="stylesheet" href="/assets/style.css">
+</head>
+<body>
+<div class="page">
+
+  <p class="eyebrow"><a href="/">Polyhydra Skills</a> &nbsp;/&nbsp; GitHub &amp; Delivery</p>
+  <h1>quest-log</h1>
+  <p class="tagline">Use when the user wants to see GitHub issue progress rendered as a retro text-adventure screen instead of a status report — single-issue quest screens, a multi-issue &quot;dungeon map&quot; overview to answer &quot;where do I need to focus,&quot; or optional local-LLM flavor narration layered over real, deterministic issue data.</p>
+  <div class="badges"><span class="badge">GitHub &amp; Delivery</span></div>
+  <hr class="rule" />
+
+  <div class="install">
+    <p>Drop this in — save the block below as <code>~/.claude/skills/quest-log/SKILL.md</code>, or run:</p>
+    <pre>mkdir -p ~/.claude/skills/quest-log
+cat &gt; ~/.claude/skills/quest-log/SKILL.md &lt;&lt;'EOF'
+# (paste the full source block below into this file)
+EOF</pre>
+  </div>
+
+  <section>
+    <h2>Full source</h2>
+    <details>
+      <summary>SKILL.md — copy everything inside</summary>
+      <pre># Quest Log
+
+Renders a GitHub issue&#x27;s markdown checklist (`- [ ]` / `- [x]`) as a boxed,
+retro text-adventure screen via `tools/quest_log.py`. Score, percent done,
+and blocked-state are always computed 100% deterministically from the real
+checklist — any flavor narration is a clearly separate, optional, best-effort
+layer that never changes the real numbers.
+
+## When to use
+
+- The user wants a fun/gamified way to see how far along an issue is.
+- The user asks &quot;where do I need to focus&quot; across several open issues.
+- The user wants a terminal-friendly progress view instead of a wall of text.
+
+## Single-issue quest screen
+
+```bash
+python3 tools/quest_log.py &lt;issue-number&gt; --repo &lt;owner/repo&gt;
+```
+
+Options:
+
+- `--shape {zork,roguelike,mud}` — which renderer to use (default `zork`). All
+  three read the exact same underlying data; only the presentation differs.
+- `--flavor` — ghostwrite 2-3 sentences of narration via the local Ollama
+  fanout (`skills/ollama-code-agents`). Best-effort: silently falls back to
+  no narration (with a stderr note) if no local Ollama agent is reachable.
+  Never touches the real score/percent/blocked values.
+- `--color {auto,always,never}` — ANSI color (default `auto`, detects a TTY).
+- `--points-per-item N` — XP awarded per checklist item (default 10).
+
+## Multi-issue dungeon map
+
+```bash
+python3 tools/quest_log.py --map --repo &lt;owner/repo&gt; --limit 20
+```
+
+Scans open issues and renders them together, sorted blocked-first then
+least-progressed-first — a disclosed heuristic over the two real signals a
+checklist gives us (blocked, percent), not a claim of true priority.
+
+Known limitation: an issue with **no checklist at all** shows `N/A`, not 0%
+or 100% — do not read `N/A` rows as &quot;nothing to do&quot; or &quot;fully done.&quot; They
+just have no checklist to measure.
+
+## Safety
+
+- Read-only against GitHub (`gh issue view` / `gh issue list`) and the local
+  Ollama fanout script. Never writes to the issue, never applies changes.
+- `--flavor` sends the issue title, percent, and a preview of remaining item
+  text to a local Ollama endpoint (not a cloud API) — do not use `--flavor`
+  on issues containing secrets or sensitive content in their title/checklist.</pre>
+    </details>
+  </section>
+
+  <footer>
+    Part of the <a href="/">Polyhydra Skills</a> catalog. Requires
+    <a href="https://claude.com/product/claude-code">Claude Code</a>.
+  </footer>
+
+</div>
+</body>
+</html>

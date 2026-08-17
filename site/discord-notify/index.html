@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>discord-notify — Polyhydra Skills</title>
+<meta name="description" content="Send the user a Discord DM via their private bot (SpottieClaw#3956, in the &quot;Polyhydra Games Internal&quot; server) using credentials from ~/.config/secrets/discord.env. Use when a long-running task finishe">
+<link rel="stylesheet" href="/assets/style.css">
+</head>
+<body>
+<div class="page">
+
+  <p class="eyebrow"><a href="/">Polyhydra Skills</a> &nbsp;/&nbsp; Dev Tools</p>
+  <h1>discord-notify</h1>
+  <p class="tagline">Send the user a Discord DM via their private bot (SpottieClaw#3956, in the &quot;Polyhydra Games Internal&quot; server) using credentials from ~/.config/secrets/discord.env. Use when a long-running task finishes, something needs the user&#x27;s attention and they may not be watching the terminal, or they explicitly ask to be pinged/notified/messaged on Discord.</p>
+  <div class="badges"><span class="badge">Dev Tools</span></div>
+  <hr class="rule" />
+
+  <div class="install">
+    <p>Drop this in — save the block below as <code>~/.claude/skills/discord-notify/SKILL.md</code>, or run:</p>
+    <pre>mkdir -p ~/.claude/skills/discord-notify
+cat &gt; ~/.claude/skills/discord-notify/SKILL.md &lt;&lt;'EOF'
+# (paste the full source block below into this file)
+EOF</pre>
+  </div>
+
+  <section>
+    <h2>Full source</h2>
+    <details>
+      <summary>SKILL.md — copy everything inside</summary>
+      <pre># Discord notify
+
+Sends a one-way DM to the user through their private Discord bot. This is a
+plain REST call — it does **not** require the interactive chat service in
+`~/code/discord-relay` to be running; the two are independent uses of the same
+bot token.
+
+Credentials live in `~/.config/secrets/discord.env` (`DISCORD_BOT_TOKEN`,
+`DISCORD_SERVER_ID`, `DISCORD_USER_ID`). `DISCORD_USER_ID` is the user&#x27;s own
+Discord user ID, used as the DM recipient.
+
+## Hard rule: never print the bot token
+
+Don&#x27;t `cat`/`echo` `~/.config/secrets/discord.env`, don&#x27;t paste the token into
+a curl command you display to the user, and don&#x27;t dump it via any other
+means. Always `source` the file and reference `$DISCORD_BOT_TOKEN` as a
+variable — never embed the literal token value in a command string.
+
+## Sending a message
+
+```sh
+source ~/.config/secrets/discord.env
+bash ~/.claude/skills/discord-notify/scripts/send-dm.sh &quot;Your message text here&quot;
+```
+
+`scripts/send-dm.sh` opens (or reuses — it&#x27;s idempotent, Discord returns the
+same channel ID for repeat calls) the DM channel with `$DISCORD_USER_ID`,
+encodes the message body safely via `python3 -c` (handles quotes/newlines
+correctly), and posts it. It does not source the env file itself — callers
+that need their own env-loading behavior (e.g. `codeburn`&#x27;s notify script,
+which unsets stale vars and supports a configurable secrets path before
+calling this script for its own DM leg) stay in control of that step.
+
+## Checking it landed
+
+The script prints `posted -&gt; DM (&lt;channel-id&gt;)` on success. A non-2xx status
+from Discord makes the underlying `curl -f` exit non-zero, which propagates
+as the script&#x27;s exit code — check that rather than parsing output for
+success.</pre>
+    </details>
+  </section>
+
+  <footer>
+    Part of the <a href="/">Polyhydra Skills</a> catalog. Requires
+    <a href="https://claude.com/product/claude-code">Claude Code</a>.
+  </footer>
+
+</div>
+</body>
+</html>

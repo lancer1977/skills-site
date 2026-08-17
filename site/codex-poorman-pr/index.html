@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>codex-poorman-pr — Polyhydra Skills</title>
+<meta name="description" content="Run a fast, local, read-only Codex analysis pass over the current changes and return prioritized recommendations before a pull request is ever opened upstream. Use during a Codex/GitHub review outage ">
+<link rel="stylesheet" href="/assets/style.css">
+</head>
+<body>
+<div class="page">
+
+  <p class="eyebrow"><a href="/">Polyhydra Skills</a> &nbsp;/&nbsp; Dev Tools</p>
+  <h1>codex-poorman-pr</h1>
+  <p class="tagline">Run a fast, local, read-only Codex analysis pass over the current changes and return prioritized recommendations before a pull request is ever opened upstream. Use during a Codex/GitHub review outage or quota gap, and as a routine rapid check before submitting any PR -- advisory only, never a merge gate or a substitute for the real Codex Review Gate.</p>
+  <div class="badges"><span class="badge">Dev Tools</span></div>
+  <hr class="rule" />
+
+  <div class="install">
+    <p>Drop this in — save the block below as <code>~/.claude/skills/codex-poorman-pr/SKILL.md</code>, or run:</p>
+    <pre>mkdir -p ~/.claude/skills/codex-poorman-pr
+cat &gt; ~/.claude/skills/codex-poorman-pr/SKILL.md &lt;&lt;'EOF'
+# (paste the full source block below into this file)
+EOF</pre>
+  </div>
+
+  <section>
+    <h2>Full source</h2>
+    <details>
+      <summary>SKILL.md — copy everything inside</summary>
+      <pre># Codex Poorman PR
+
+A cheap, fast, local Codex pass over the current diff, run before real
+review -- not instead of it. Two triggers:
+
+- **Outage/quota**: GitHub&#x27;s Codex Review Gate is unavailable and a rapid
+  local sanity check is still worth having.
+- **Routine (the common case)**: run this before opening any PR, even when
+  Codex is fully available, to catch obvious problems on the author&#x27;s own
+  machine instead of spending a real upstream review cycle finding them.
+
+This is always advisory. It never posts to GitHub, never blocks a merge,
+never counts as gate evidence, and never replaces required human or
+independent review.
+
+## Run it
+
+```bash
+python skills/codex-poorman-pr/scripts/poorman_pr_review.py --repo /path/to/repo
+```
+
+Scope resolution (no flags needed for the common case):
+
+- If the repo has staged, unstaged, or untracked changes, those are reviewed.
+- Otherwise, the full branch diff against `--base` (default `origin/main`) is
+  reviewed.
+- `--uncommitted` forces working-tree review even when the branch also has
+  committed changes ahead of base.
+
+The script has no dependency on any repo-specific config file -- only `git`
+and the `codex` CLI. It works the same way in this repo or any other.
+
+### `--deep`: finish the argument locally
+
+```bash
+python skills/codex-poorman-pr/scripts/poorman_pr_review.py --repo /path/to/repo --deep
+```
+
+Use this before opening anything non-trivial. It tells the pass to be
+exhaustive rather than fast, on the same `gpt-5.6-terra` tier -- the expensive
+thing is not the model, it is discovering a defect after a push, a CI run and
+a review cycle have already been spent on it. It does not switch to
+`gpt-5.6-sol`: AGENTS.md reserves Sol for planning, architecture, material
+tradeoffs, and evidence-backed diagnosis of a current-head PR failure, and an
+exhaustive-but-still-routine pre-PR pass doesn&#x27;t qualify.
+
+The routine flagless pass stays cheap. `--deep` is for when the goal is that
+the change needs exactly one upstream round trip.
+
+## What a finding must contain
+
+Both modes require more than a location, because a finding you cannot act on
+costs a round trip anyway:
+
+- **`failure_scenario`** -- the ordered sequence, inputs or state that reaches
+  the failure, and the wrong result. A finding that cannot be written this way
+  is usually a style opinion; it gets dropped or filed P3.
+- **`governing_reference`** -- the repository rule the change contradicts, as
+  path plus line range. The pass is told to read `AGENTS.md`, `CLAUDE.md` and
+  any policy or config file the diff touches *before* judging the change. A
+  change that contradicts a written rule is a finding even when the code is
+  correct, and it is the cheapest class of problem to catch locally.
+
+The prompt also names defect classes that have historically reached upstream
+review from this repo rather than being caught here: config declared narrower
+than the code&#x27;s actual API calls, time-of-check/time-of-use gaps, enumerated
+cases missing a sibling member, at-most-once guarantees a second path can
+violate, and automated paths that fail to recognize a documented manual one.
+
+## Model
+
+Always `gpt-5.6-terra` (`--model` to override) regardless of `--deep` --
+Terra is this repo&#x27;s tier for &quot;implementation, test repair, routine review,
+and other ordinary repository work&quot; per AGENTS.md, and a pre-PR pass stays in
+that category even at `--deep`&#x27;s exhaustive depth.
+
+Note: the originally requested default, `5.3-studio`, is not a valid model
+for this Codex CLI account (`codex exec` rejects it with a 400; it does not
+appear in `~/.codex/models_cache.json`). Check that cache file for the
+current real model list before changing this default again.
+
+## Reading the output
+
+The script prints a plain-text report grouped by severity (P0 highest to P3
+lowest) with file:line and a one-line explanation per finding. Treat P0/P1 as
+worth fixing before opening the PR; P2/P3 are judgment calls. There is no
+`--fail-on-findings`-style gate behavior by design -- this tool informs, it
+does not enforce. If findings should become tracked follow-up work, file a
+GitHub issue for them the normal way.
+
+## Boundaries
+
+- Read-only: `codex exec --sandbox read-only`. It never edits files itself.
+- Never treat its `verdict`/`findings` output as Codex Review Gate evidence,
+  admin-merge justification, or a substitute for `code-review-hack`&#x27;s formal
+  degraded-review packet/report/verify flow when that heavier process is
+  actually required.
+- Do not skip the repository&#x27;s real exact-head Codex review because this
+  passed -- it is a pre-check, not a replacement.
+- Keep runs read-only against the working repository; do not point `--repo`
+  at a path outside the intended change scope.
+
+## Related files
+
+- `scripts/poorman_pr_review.py` -- the review runner.
+- `references/recommendation-schema.json` -- the structured output contract
+  passed to `codex exec --output-schema`.</pre>
+    </details>
+  </section>
+
+  <footer>
+    Part of the <a href="/">Polyhydra Skills</a> catalog. Requires
+    <a href="https://claude.com/product/claude-code">Claude Code</a>.
+  </footer>
+
+</div>
+</body>
+</html>
