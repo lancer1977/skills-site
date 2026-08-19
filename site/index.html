@@ -14,7 +14,7 @@
     <p class="eyebrow">skills.polyhydra.app</p>
     <h1>Polyhydra Skills</h1>
     <p class="tagline">Claude Code skills I actually use day to day, packaged as copy-paste
-    <code>SKILL.md</code> files. 38 skills, 12 of them homelab-internal
+    <code>SKILL.md</code> files. 39 skills, 12 of them homelab-internal
     (pattern only, no implementation).</p>
   </div>
 
@@ -94,9 +94,9 @@
           <div class="name">nuget-publish</div>
           <div class="desc">Publishes internal .NET packages to a private NuGet feed so other repos can restore them.</div>
         </a>
-        <a class="skill-card" href="/opinionated-defaults/" data-name="opinionated-defaults" data-desc="apply a small, curated bundle of claude code settings.json tweaks — auto-compact earlier (~40% of context instead of near-100%), file checkpointing for /rewind, background compaction precompute, and terminal progress indicators. use when the user asks to &amp;quot;tune up&amp;quot; their claude code settings, apply the recommended/opinionated defaults, make auto-compact trigger sooner, or mentions this skill by name.">
+        <a class="skill-card" href="/opinionated-defaults/" data-name="opinionated-defaults" data-desc="apply a small, curated bundle of claude code settings.json tweaks — auto-compact earlier (~30% of context instead of near-100%), file checkpointing for /rewind, background compaction precompute, and terminal progress indicators. use when the user asks to &amp;quot;tune up&amp;quot; their claude code settings, apply the recommended/opinionated defaults, make auto-compact trigger sooner, or mentions this skill by name.">
           <div class="name">opinionated-defaults</div>
-          <div class="desc">Apply a small, curated bundle of Claude Code settings.json tweaks — auto-compact earlier (~40% of context instead of near-100%), file checkpointing for /rewind, background compaction precompute, and terminal progress indicators. Use when the user asks to &quot;tune up&quot; their Claude Code settings, apply the recommended/opinionated defaults, make auto-compact trigger sooner, or mentions this skill by name.</div>
+          <div class="desc">Apply a small, curated bundle of Claude Code settings.json tweaks — auto-compact earlier (~30% of context instead of near-100%), file checkpointing for /rewind, background compaction precompute, and terminal progress indicators. Use when the user asks to &quot;tune up&quot; their Claude Code settings, apply the recommended/opinionated defaults, make auto-compact trigger sooner, or mentions this skill by name.</div>
         </a>
         <a class="skill-card" href="/sage-code-index/" data-name="sage-code-index" data-desc="search sage&amp;#x27;s code index before doing an ad-hoc repository sweep. use when asked &amp;quot;find duplicate logic&amp;quot;, &amp;quot;does this pattern exist elsewhere&amp;quot;, &amp;quot;what touches x across my repos&amp;quot;, or whether code should be reused or consolidated across repositories.">
           <div class="name">sage-code-index</div>
@@ -216,6 +216,10 @@
           <div class="name">portainer-api</div>
           <div class="desc">Manage Portainer environments, stacks, services, containers, and logs through the Portainer HTTP API. Use when the user wants you to inspect or update Portainer-managed stacks, restart or diagnose containers/services, fetch stack files, compare deployed vs intended compose content, or troubleshoot Traefik/Swarm/container state without using the Portainer web UI.</div>
         </a>
+        <a class="skill-card" href="/straighten-the-road/" data-name="straighten-the-road" data-desc="prep a portfolio of repos across ~/projects for a multi-day unattended coding-agent burn (codex or otherwise) — narrow scope to the repos actually in play, clear local/pr/branch turbulence, and make sure every in-scope repo has queued work. use when the user says &amp;quot;straighten the road&amp;quot;, &amp;quot;get ready for the burn&amp;quot;, &amp;quot;clear the runway&amp;quot;, wants repos &amp;quot;in good shape&amp;quot; before a multi-day agent session, or asks what&amp;#x27;s blocking a clean unattended run across their portfolio.">
+          <div class="name">straighten-the-road</div>
+          <div class="desc">Prep a portfolio of repos across ~/projects for a multi-day unattended coding-agent burn (Codex or otherwise) — narrow scope to the repos actually in play, clear local/PR/branch turbulence, and make sure every in-scope repo has queued work. Use when the user says &quot;straighten the road&quot;, &quot;get ready for the burn&quot;, &quot;clear the runway&quot;, wants repos &quot;in good shape&quot; before a multi-day agent session, or asks what&#x27;s blocking a clean unattended run across their portfolio.</div>
+        </a>
         <a class="skill-card" href="/ubiquitous-language/" data-name="ubiquitous-language" data-desc="shared glossary for terms that keep getting conflated across projects -- version, stage/tier, delivery phase (v0/v1), mfd phase (phase 0 / r-numbers), and the task hierarchy (epic/issue/pr). use when scoping or reporting status and it&amp;#x27;s unclear whether &amp;quot;v1&amp;quot;, &amp;quot;phase 0&amp;quot;, &amp;quot;shipped&amp;quot;, or &amp;quot;dev&amp;quot; means the same thing here as it did on another project, or when two projects use overlapping numbering (s-steps, r-numbers, waves) that shouldn&amp;#x27;t be assumed to line up.">
           <div class="name">ubiquitous-language</div>
           <div class="desc">Shared glossary for terms that keep getting conflated across projects -- Version, Stage/Tier, Delivery Phase (V0/V1), MFD Phase (Phase 0 / R-numbers), and the task hierarchy (epic/issue/PR). Use when scoping or reporting status and it&#x27;s unclear whether &quot;V1&quot;, &quot;Phase 0&quot;, &quot;shipped&quot;, or &quot;dev&quot; means the same thing here as it did on another project, or when two projects use overlapping numbering (S-steps, R-numbers, waves) that shouldn&#x27;t be assumed to line up.</div>
@@ -247,7 +251,7 @@
       var anyShown = g.querySelectorAll('.skill-card:not(.hidden)').length > 0;
       g.style.display = anyShown ? '' : 'none';
     });
-    count.textContent = q ? (shown + ' of 38 skills') : '';
+    count.textContent = q ? (shown + ' of 39 skills') : '';
   }
   input.addEventListener('input', apply);
 })();

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>opinionated-defaults — Polyhydra Skills</title>
-<meta name="description" content="Apply a small, curated bundle of Claude Code settings.json tweaks — auto-compact earlier (~40% of context instead of near-100%), file checkpointing for /rewind, background compaction precompute, and t">
+<meta name="description" content="Apply a small, curated bundle of Claude Code settings.json tweaks — auto-compact earlier (~30% of context instead of near-100%), file checkpointing for /rewind, background compaction precompute, and t">
 <link rel="stylesheet" href="/assets/style.css">
 </head>
 <body>
@@ -12,7 +12,7 @@
 
   <p class="eyebrow"><a href="/">Polyhydra Skills</a> &nbsp;/&nbsp; Dev Tools</p>
   <h1>opinionated-defaults</h1>
-  <p class="tagline">Apply a small, curated bundle of Claude Code settings.json tweaks — auto-compact earlier (~40% of context instead of near-100%), file checkpointing for /rewind, background compaction precompute, and terminal progress indicators. Use when the user asks to &quot;tune up&quot; their Claude Code settings, apply the recommended/opinionated defaults, make auto-compact trigger sooner, or mentions this skill by name.</p>
+  <p class="tagline">Apply a small, curated bundle of Claude Code settings.json tweaks — auto-compact earlier (~30% of context instead of near-100%), file checkpointing for /rewind, background compaction precompute, and terminal progress indicators. Use when the user asks to &quot;tune up&quot; their Claude Code settings, apply the recommended/opinionated defaults, make auto-compact trigger sooner, or mentions this skill by name.</p>
   <div class="badges"><span class="badge">Dev Tools</span></div>
   <hr class="rule" />
 
@@ -40,7 +40,7 @@ already there, and only touch the four keys below.
 | Key | Value | Why |
 | --- | --- | --- |
 | `autoCompactEnabled` | `true` | Turns on auto-compact at all. |
-| `autoCompactWindow` | computed — see below | Compact fires once conversation tokens reach this count. Default Claude Code behavior waits until the context is nearly full (~97% on some models); this bundle triggers around 40% instead, trading a bit more compaction for a session that never feels close to the edge. |
+| `autoCompactWindow` | computed — see below | Compact fires once conversation tokens reach this count. Default Claude Code behavior waits until the context is nearly full (~97% on some models); this bundle triggers around 30% instead, trading more compaction for a session that never feels close to the edge. |
 | `fileCheckpointingEnabled` | `true` | Snapshots files before edits so `/rewind` can restore them. Pure safety net, no downside. |
 | `precomputeCompactionEnabled` | `true` | Computes the compaction summary in the background before it&#x27;s needed, so hitting the threshold doesn&#x27;t stall the session. Only has an effect when `autoCompactEnabled` is on. |
 | `terminalProgressBarEnabled` | `true` | Emits OSC 9;4 taskbar/dock progress during long operations. Harmless where the terminal doesn&#x27;t support it. |
@@ -49,7 +49,7 @@ already there, and only touch the four keys below.
 
 This is the one value that isn&#x27;t a flat constant — it&#x27;s a token count, not a
 percentage, and `settings.json` clamps it to `[100000, 1000000]`. To hit
-&quot;~40% of context&quot;:
+&quot;~30% of context&quot;:
 
 1. Figure out the target&#x27;s actual context window. In order of preference:
    - Ask the user directly if it&#x27;s not obvious (&quot;Are you on the 1M-token
@@ -59,10 +59,10 @@ percentage, and `settings.json` clamps it to `[100000, 1000000]`. To hit
      explicitly enabled extended context.
    - If genuinely unknown, default to the 1M assumption (see step 2) and say
      so explicitly rather than silently guessing 200K.
-2. Compute `round(context_window * 0.4)`, then clamp to `[100000, 1000000]`.
-   - 1M window → 400000 (clean, no clamping).
-   - 200K window → raw value is 80000, below the floor, so the clamped
-     result is 100000 (~50%, not 40%). Tell the user this explicitly — don&#x27;t
+2. Compute `round(context_window * 0.3)`, then clamp to `[100000, 1000000]`.
+   - 1M window → 300000 (clean, no clamping).
+   - 200K window → raw value is 60000, below the floor, so the clamped
+     result is 100000 (~50%, not 30%). Tell the user this explicitly — don&#x27;t
      silently write a number that doesn&#x27;t match what they asked for.
 3. Write the clamped integer to `autoCompactWindow`.
 
