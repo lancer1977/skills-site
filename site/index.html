@@ -14,7 +14,7 @@
     <p class="eyebrow">skills.polyhydra.app</p>
     <h1>Polyhydra Skills</h1>
     <p class="tagline">Claude Code skills I actually use day to day, packaged as copy-paste
-    <code>SKILL.md</code> files. 38 skills, 12 of them homelab-internal
+    <code>SKILL.md</code> files. 39 skills, 12 of them homelab-internal
     (pattern only, no implementation).</p>
   </div>
 
@@ -119,6 +119,10 @@
         <a class="skill-card" href="/quest-log/" data-name="quest-log" data-desc="use when the user wants to see github issue progress rendered as a retro text-adventure screen instead of a status report — single-issue quest screens, a multi-issue &amp;quot;dungeon map&amp;quot; overview to answer &amp;quot;where do i need to focus,&amp;quot; or optional local-llm flavor narration layered over real, deterministic issue data.">
           <div class="name">quest-log</div>
           <div class="desc">Use when the user wants to see GitHub issue progress rendered as a retro text-adventure screen instead of a status report — single-issue quest screens, a multi-issue &quot;dungeon map&quot; overview to answer &quot;where do I need to focus,&quot; or optional local-LLM flavor narration layered over real, deterministic issue data.</div>
+        </a>
+        <a class="skill-card" href="/straighten-the-road/" data-name="straighten-the-road" data-desc="prep a portfolio of repos across ~/projects for a multi-day unattended coding-agent burn (codex or otherwise) — narrow scope to the repos actually in play, clear local/pr/branch turbulence, and make sure every in-scope repo has queued work. use when the user says &amp;quot;straighten the road&amp;quot;, &amp;quot;get ready for the burn&amp;quot;, &amp;quot;clear the runway&amp;quot;, wants repos &amp;quot;in good shape&amp;quot; before a multi-day agent session, or asks what&amp;#x27;s blocking a clean unattended run across their portfolio.">
+          <div class="name">straighten-the-road</div>
+          <div class="desc">Prep a portfolio of repos across ~/projects for a multi-day unattended coding-agent burn (Codex or otherwise) — narrow scope to the repos actually in play, clear local/PR/branch turbulence, and make sure every in-scope repo has queued work. Use when the user says &quot;straighten the road&quot;, &quot;get ready for the burn&quot;, &quot;clear the runway&quot;, wants repos &quot;in good shape&quot; before a multi-day agent session, or asks what&#x27;s blocking a clean unattended run across their portfolio.</div>
         </a>
         <a class="skill-card" href="/v1-delivery-shaping/" data-name="v1-delivery-shaping" data-desc="define a project&amp;#x27;s lean v1 from a v0 baseline, including inherited half-built work, then create a github-authoritative epic, feature-story, and qa-validation shape. use when a project needs its first coherent release definition; when the user mentions v0, v1, a v1 checklist, validation work under an epic, inherited partial code, or post-v1 stabilization.">
           <div class="name">v1-delivery-shaping</div>
@@ -247,7 +251,7 @@
       var anyShown = g.querySelectorAll('.skill-card:not(.hidden)').length > 0;
       g.style.display = anyShown ? '' : 'none';
     });
-    count.textContent = q ? (shown + ' of 38 skills') : '';
+    count.textContent = q ? (shown + ' of 39 skills') : '';
   }
   input.addEventListener('input', apply);
 })();

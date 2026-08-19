@@ -62,7 +62,10 @@ the loop fast rather than over-producing content.
    ```bash
    ~/code/learning-hub/publish.sh /path/to/deck.json [server-url]
    ```
-   If the display server&#x27;s LAN address isn&#x27;t already known, ask the user
+   `publish.sh` runs `scripts/check-deck.mjs` first and aborts if narration
+   is inconsistent (some slides have `audio`, others with real text don&#x27;t)
+   -- re-run `narrate-deck.mjs` if that happens, don&#x27;t force a partial
+   publish. If the display server&#x27;s LAN address isn&#x27;t already known, ask the user
    once and save it as a reference memory (e.g. &quot;learning-hub kiosk endpoint
    is http://192.168.x.x:4173&quot;) so future sessions don&#x27;t have to ask again.
    Default is `http://localhost:4173` if the server runs on the same machine
