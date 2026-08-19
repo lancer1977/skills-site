@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>obs-websocket — Polyhydra Skills</title>
+<meta name="description" content="Control the arch-server OBS Studio instance (scenes, sources, browser sources, stream/record) via the obs-websocket-mcp MCP server, or re-register/repair that server if it&#x27;s missing. Use when the user">
+<link rel="stylesheet" href="/assets/style.css">
+</head>
+<body>
+<div class="page">
+
+  <p class="eyebrow"><a href="/">Polyhydra Skills</a> &nbsp;/&nbsp; Uncategorized</p>
+  <h1>obs-websocket</h1>
+  <p class="tagline">Control the arch-server OBS Studio instance (scenes, sources, browser sources, stream/record) via the obs-websocket-mcp MCP server, or re-register/repair that server if it&#x27;s missing. Use when the user wants to add a browser/media source to OBS, switch scenes, start/stop streaming or recording, or asks to &quot;wire up OBS&quot; / &quot;use the OBS skill&quot;.</p>
+  <div class="badges"><span class="badge">Uncategorized</span></div>
+  <hr class="rule" />
+
+  <div class="install">
+    <p>Drop this in — save the block below as <code>~/.claude/skills/obs-websocket/SKILL.md</code>, or run:</p>
+    <pre>mkdir -p ~/.claude/skills/obs-websocket
+cat &gt; ~/.claude/skills/obs-websocket/SKILL.md &lt;&lt;'EOF'
+# (paste the full source block below into this file)
+EOF</pre>
+  </div>
+
+  <section>
+    <h2>Full source</h2>
+    <details>
+      <summary>SKILL.md — copy everything inside</summary>
+      <pre># obs-websocket
+
+Agentic control of the OBS Studio instance on arch-server (`192.168.0.173`,
+same box `obs-websocket-mcp` runs on) via the `obs-websocket-mcp` MCP server
+— repo: `github.com/lancer1977/obs-websocket-mcp` (private), cloned at
+`~/code/obs-websocket-mcp` (canonical, tracks `main`) with active development
+in a worktree at `~/worktrees/obs-websocket-mcp-v1` until the V1 PR merges.
+
+## First: check the MCP tools are actually live
+
+The `obs.*` tools (`obs.get_status`, `obs.list_scenes`, `obs.list_sources`,
+`obs.set_current_scene`, `obs.set_source_enabled`, `obs.create_browser_source`,
+`obs.start_stream`/`stop_stream`, `obs.start_record`/`stop_record`) come from
+the registered MCP server, not from this skill directly. If they&#x27;re not
+showing up as available tools, the server isn&#x27;t registered in this session —
+see &quot;Registering the MCP server&quot; below.
+
+## Credentials
+
+Live in `~/.config/secrets/obs.env` (`OBS_HOST`, `OBS_PORT`, `OBS_PASSWORD`,
+`OBS_TIMEOUT_SECONDS`, `OBS_ALLOW_WRITES`) — `OBS_HOST=127.0.0.1` since OBS
+and the MCP server run on the same box (arch-server), which sidesteps any
+firewall question entirely. **Never** hardcode these values or put
+`OBS_PASSWORD` in a command string you&#x27;re about to show/echo — always
+`source` the file and reference `$OBS_PASSWORD` as a variable, same pattern
+as the `seq`/`cloudflare-dns` skills.
+
+## Hard rule: writes are off by default
+
+`OBS_ALLOW_WRITES=false` is the default. Every mutating tool
+(`set_current_scene`, `set_source_enabled`, `create_browser_source`,
+`start_stream`, `stop_stream`, `start_record`, `stop_record`) raises
+`UnauthorizedError` until it&#x27;s flipped to `true` — this is a live A/V
+control surface (it can put something on someone&#x27;s actual stream), so
+treat turning writes on as a real decision, not a default to reach for.
+To enable: edit `OBS_ALLOW_WRITES=true` in `~/.config/secrets/obs.env`,
+then re-run the registration command below (env vars are baked in at
+registration time, not read live per-call).
+
+## Registering the MCP server
+
+Background/sandboxed Claude Code sessions cannot write their own MCP config
+(`~/.claude/.config.json`) — the command silently no-ops even when it
+reports success. Registration has to be run by the user directly:
+
+```
+source ~/.config/secrets/obs.env &amp;&amp; claude mcp add obs-websocket-mcp -s user \
+  -e PYTHONPATH=&lt;path to obs-websocket-mcp checkout, e.g. ~/code/obs-websocket-mcp once merged&gt; \
+  -e OBS_HOST=&quot;$OBS_HOST&quot; -e OBS_PORT=&quot;$OBS_PORT&quot; -e OBS_PASSWORD=&quot;$OBS_PASSWORD&quot; \
+  -e OBS_TIMEOUT_SECONDS=&quot;$OBS_TIMEOUT_SECONDS&quot; -e OBS_ALLOW_WRITES=&quot;$OBS_ALLOW_WRITES&quot; \
+  -- &lt;path&gt;/.venv/bin/python -m app.main
+```
+
+`claude mcp get obs-websocket-mcp` confirms it&#x27;s actually registered — don&#x27;t
+trust the &quot;Added stdio MCP server...&quot; success message alone in a background
+session, verify with `get`.
+
+## Verified-live vs. mock-only (2026-08-19)
+
+`obsws_python.ReqClient` has **no consistent kwarg-naming convention across
+methods** — some take snake_case, some camelCase, some a bare positional
+`name`. The connector&#x27;s unit tests only ever ran against a mock I wrote
+myself, which used the wrong convention for several methods; this wasn&#x27;t
+caught until testing against the real OBS instance. Confirmed correct via
+`inspect.signature`/`getsource` on the installed package, not guessing:
+- `get_current_program_scene()`, `set_current_program_scene(name)`,
+  `get_scene_item_list(name)` — bare positional `name`.
+- `set_scene_item_enabled(scene_name, item_id, enabled)` — snake_case.
+- `create_input(sceneName, inputName, inputKind, inputSettings, sceneItemEnabled)`
+  — camelCase.
+
+**Live-verified end-to-end** (against real OBS 32.2.1, websocket 5.7.4):
+`get_status`, `list_scenes`, `list_sources`, `create_browser_source`.
+**Still mock-only, not yet exercised against real OBS**: `set_current_scene`,
+`set_source_enabled`, `start_stream`/`stop_stream`, `start_record`/`stop_record`.
+If any of these misbehave, check the actual installed `obsws_python`
+signature first (`python -c &quot;import obsws_python as o, inspect;
+print(inspect.signature(o.ReqClient.&lt;method&gt;))&quot;`) before assuming the bug is
+elsewhere — this library&#x27;s inconsistency is the most likely culprit.
+
+## Adding chop-it (or any URL) as a test browser source
+
+Once writes are enabled and the server is registered:
+`obs.create_browser_source` with `scene_name`, `source_name`, `url` (plus
+optional `width`/`height`, default 1920x1080). See
+[[project_chop_it_status_202608]] for the live chop-it HLS test URL and a
+known caveat about its manifest-replacement behavior in OBS Media/Browser
+sources.
+
+## DreadTV&#x27;s parallel adapter
+
+`~/code/dreadtv`&#x27;s `ObsSourceAdapter` (`src/dreadtv/adapters.py`) is a
+separate, older obs-websocket client this package was extracted from.
+DreadTV issue #353 tracks refactoring it to depend on this package instead
+— blocked on `obs-websocket-mcp`&#x27;s V1 PR merging.</pre>
+    </details>
+  </section>
+
+  <footer>
+    Part of the <a href="/">Polyhydra Skills</a> catalog. Requires
+    <a href="https://claude.com/product/claude-code">Claude Code</a>.
+  </footer>
+
+</div>
+</body>
+</html>

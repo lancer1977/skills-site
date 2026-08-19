@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>projects — Polyhydra Skills</title>
-<meta name="description" content="Navigate ~/projects -- list hubs with purpose and health, initialize a new hub (single-repo, or multi-repo via project-home), print a briefing block for a new conversation, recommend what to work on n">
+<meta name="description" content="Navigate ~/projects -- list hubs with purpose and health, initialize a new hub (single-repo, or multi-repo via project-home), print a briefing block for a new conversation, give a &quot;catch me up&quot; recent">
 <link rel="stylesheet" href="/assets/style.css">
 </head>
 <body>
@@ -12,7 +12,7 @@
 
   <p class="eyebrow"><a href="/">Polyhydra Skills</a> &nbsp;/&nbsp; Agent Workflow</p>
   <h1>projects</h1>
-  <p class="tagline">Navigate ~/projects -- list hubs with purpose and health, initialize a new hub (single-repo, or multi-repo via project-home), print a briefing block for a new conversation, recommend what to work on next (git-dirty plus PR plus live-session signal), launch a session in a project, capture a stray idea with no home yet, park or activate backlog entries. Use for &quot;what should I work on&quot;, &quot;list my projects&quot;, &quot;set me up on X&quot;, &quot;start a session in X&quot;, &quot;new idea&quot;, &quot;jot this down&quot;, &quot;note this idea for later&quot;, or naming a project under ~/projects.</p>
+  <p class="tagline">Navigate ~/projects -- list hubs with purpose and health, initialize a new hub (single-repo, or multi-repo via project-home), print a briefing block for a new conversation, give a &quot;catch me up&quot; recent/horizon/goals summary for one project, recommend what to work on next (git-dirty plus PR plus live-session signal), launch a session in a project, capture a stray idea with no home yet, park or activate backlog entries. Use for &quot;what should I work on&quot;, &quot;list my projects&quot;, &quot;set me up on X&quot;, &quot;start a session in X&quot;, &quot;new day&quot;, &quot;catch me up on X&quot;, &quot;standup&quot;, &quot;what happened on X&quot;, &quot;new idea&quot;, &quot;jot this down&quot;, &quot;note this idea for later&quot;, or naming a project under ~/projects.</p>
   <div class="badges"><span class="badge">Agent Workflow</span></div>
   <hr class="rule" />
 
@@ -35,9 +35,9 @@ Helper for navigating the `~/projects` hub convention (see
 delegates to, and `~/projects/LOCAL-WORK-RUNBOOK.md` for the shared local-work
 contract every hub links to).
 
-This skill has six actions: **list**, **init**, **context**, **recommend**,
-**launch**, **idea** (plus park/activate shortcuts). Figure out which the
-user wants from phrasing; if genuinely ambiguous, offer them as
+This skill has seven actions: **list**, **init**, **context**, **new-day**,
+**recommend**, **launch**, **idea** (plus park/activate shortcuts). Figure
+out which the user wants from phrasing; if genuinely ambiguous, offer them as
 `AskUserQuestion` options rather than guessing.
 
 ## Shared data sources
@@ -214,6 +214,86 @@ before starting work.
    to this hub (e.g. `main` vs `~/code/&lt;repo&gt;` resolution), and any
    project-specific runbook file if one exists (`AGENTS.md`, `PORTAL.md`,
    `*-WORK-LOG.md` in the hub root).
+
+## new-day &lt;project&gt;
+
+&quot;Catch me up&quot; structured summary for one project (hub or single repo):
+what shipped recently, what&#x27;s open, and what the goal structure looks like.
+Complements `context` — `context` primes a *session* with current state
+(branch, dirty, active sessions) to start work; `new-day` looks backward
+(recent commits) and forward (open issues, goal docs) to orient a *person*
+at the start of a day. Reuses the same resolve/classify/audit steps as
+`context`; don&#x27;t re-derive them.
+
+1. Resolve `~/projects/&lt;name&gt;` and classify shape (as in `context` steps
+   1–2). Confirm repo list.
+2. **Recent** — per repo, against the upstream tracking branch, not just
+   local `HEAD`: `git -C &lt;repo&gt; fetch -q` then
+   `git -C &lt;repo&gt; log @{u} --oneline --since=&quot;7 days ago&quot;` (fall back to the
+   local branch if there&#x27;s no upstream). A local checkout that&#x27;s behind
+   origin will otherwise silently under-report recent activity — confirmed
+   live on `dread-tv`, where local `HEAD` showed 1 commit in 7 days but
+   `origin/main` showed 17. If the log is empty even against upstream, fall
+   back to `git -C &lt;repo&gt; log @{u} --oneline -n 10` and say explicitly
+   &quot;quiet for &gt;7 days, showing last 10 commits&quot; rather than rendering a
+   blank section. Group by repo when the hub has more than one.
+3. **Horizon** — per repo with a `github_slug` (from the audit JSON):
+   `gh issue list --state open --limit 20` and `gh pr list --state open`.
+   If the hub tracks a GitHub Project/milestone that `quest-log` already
+   renders, invoke that skill (`Skill` tool, `skill: &quot;quest-log&quot;`) for the
+   dungeon-map view instead of re-listing issues by hand — it already does
+   prioritized issue rendering; don&#x27;t duplicate its logic here. Fall back to
+   the raw `gh` listing only when quest-log has nothing for that repo.
+4. **Goals** — synthesize, don&#x27;t dump verbatim:
+   - `workspace.yaml` `purpose:` (structured hubs) or README&#x27;s first
+     paragraph (single-repo hubs).
+   - `~/projects/REMAINING-WORK-SOW.md`&#x27;s section for this hub, if present.
+   - `&lt;hub&gt;/DELIVERY-PLAN.md`, if present.
+   Label this section as a snapshot, not authority — same caveat
+   `~/projects/CLAUDE.md` puts on these docs itself. If it materially
+   disagrees with what **Recent**/**Horizon** just showed (e.g. the SOW
+   calls something &quot;not started&quot; but there&#x27;s a merged PR closing it), flag
+   the mismatch instead of silently picking one.
+5. **Hygiene** — dirty repos, PR workspace count, broken links (audit JSON,
+   same source as `list`/`recommend`), plus any live session on this hub
+   from `claude agents --json`.
+6. Render via `tools/new_day_render.py`, don&#x27;t hand-draw the page. This is
+   the one deliberate exception to this user&#x27;s usual compact-tables
+   preference — `new-day` is meant to be read start-to-finish like
+   `quest-log`&#x27;s dungeon-map screen — but the box-drawing/alignment itself
+   is delegated to a script for the same reason `quest_log.py` is: freehand
+   ASCII art from the model drifts (column widths, wrap points) and burns
+   reasoning on layout instead of content. Assemble the findings from steps
+   2–5 into this JSON shape and pipe it in:
+
+   ```json
+   {
+     &quot;project&quot;: &quot;&lt;name&gt;&quot;, &quot;purpose&quot;: &quot;&lt;one-line purpose&gt;&quot;,
+     &quot;recent&quot;: {&quot;window&quot;: &quot;7d, origin/main&quot;, &quot;note&quot;: &quot;&lt;optional, e.g. local checkout was N behind&gt;&quot;,
+                &quot;items&quot;: [&quot;&lt;commit summary&gt;&quot;, &quot;...&quot;], &quot;total&quot;: 17},
+     &quot;horizon&quot;: {&quot;issues_open&quot;: 0, &quot;prs_open&quot;: 1,
+                 &quot;prs&quot;: [{&quot;number&quot;: 351, &quot;state&quot;: &quot;draft&quot;, &quot;title&quot;: &quot;...&quot;}]},
+     &quot;goals&quot;: {&quot;source&quot;: &quot;REMAINING-WORK-SOW.md&quot;, &quot;primary_outcome&quot;: &quot;&lt;text&gt;&quot;,
+               &quot;notes&quot;: [{&quot;ok&quot;: true, &quot;text&quot;: &quot;&lt;confirmation, ✓&gt;&quot;},
+                         {&quot;ok&quot;: false, &quot;text&quot;: &quot;&lt;mismatch found, ⚠&gt;&quot;}]},
+     &quot;hygiene&quot;: {&quot;working_tree&quot;: {&quot;ok&quot;: true, &quot;text&quot;: &quot;clean&quot;},
+                 &quot;vs_origin&quot;: {&quot;ok&quot;: false, &quot;text&quot;: &quot;16 commits behind (not pulled)&quot;},
+                 &quot;pr_workspaces&quot;: 1, &quot;live_sessions&quot;: 1}
+   }
+   ```
+
+   ```sh
+   echo &#x27;&lt;json&gt;&#x27; | python3 ~/.claude/skills/projects/tools/new_day_render.py
+   ```
+
+   `notes[].ok` drives the `✓`/`⚠` marker — that&#x27;s the &quot;friendly ascii art
+   draws the eye&quot; part of the brief; put anything needing attention
+   (dirty tree, behind origin, stale goal doc) in an `ok: false` entry so it
+   stands out against the clean `✓` lines. Print the script&#x27;s stdout
+   verbatim as the response — don&#x27;t re-wrap or re-indent it afterward.
+7. End in the standard `AskUserQuestion` picker (see § Ending a turn) — real
+   next actions: dig into one item, launch a session here, promote an idea
+   from `_ideas.md` if one&#x27;s tied to this project, stop here.
 
 ## recommend
 

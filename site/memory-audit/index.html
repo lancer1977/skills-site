@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>memory-audit — Polyhydra Skills</title>
+<meta name="description" content="Sweep the auto-memory store (~/.claude/projects/-home-lancer1977-projects/memory/) for structural hygiene problems and recurring-friction patterns worth turning into a skill or hook. Use on &quot;audit mem">
+<link rel="stylesheet" href="/assets/style.css">
+</head>
+<body>
+<div class="page">
+
+  <p class="eyebrow"><a href="/">Polyhydra Skills</a> &nbsp;/&nbsp; Uncategorized</p>
+  <h1>memory-audit</h1>
+  <p class="tagline">Sweep the auto-memory store (~/.claude/projects/-home-lancer1977-projects/memory/) for structural hygiene problems and recurring-friction patterns worth turning into a skill or hook. Use on &quot;audit memory&quot;, &quot;find memory gaps&quot;, &quot;what memories are orphaned&quot;, &quot;mine memories for new skills&quot;, &quot;memory hygiene&quot;, or when asked to look back over recent work for duplication/frustration patterns. Not for recalling a specific fact -- that&#x27;s ordinary memory lookup, this is a meta-pass over the whole store.</p>
+  <div class="badges"><span class="badge">Uncategorized</span></div>
+  <hr class="rule" />
+
+  <div class="install">
+    <p>Drop this in — save the block below as <code>~/.claude/skills/memory-audit/SKILL.md</code>, or run:</p>
+    <pre>mkdir -p ~/.claude/skills/memory-audit
+cat &gt; ~/.claude/skills/memory-audit/SKILL.md &lt;&lt;'EOF'
+# (paste the full source block below into this file)
+EOF</pre>
+  </div>
+
+  <section>
+    <h2>Full source</h2>
+    <details>
+      <summary>SKILL.md — copy everything inside</summary>
+      <pre># Memory audit
+
+A periodic self-check on the memory system itself, not a lookup of any one
+memory. Two things drift silently if nobody checks them: the index can fall
+out of sync with the files it&#x27;s supposed to point at, and the same friction
+can get rediscovered and re-recorded multiple times instead of being fixed
+once (structurally, as a skill/hook) or consolidated.
+
+## Step 1 -- index integrity
+
+Every `&lt;type&gt;_&lt;slug&gt;.md` file in the memory directory should have exactly
+one bullet in `MEMORY.md` linking to it.
+
+```sh
+cd ~/.claude/projects/-home-lancer1977-projects/memory/
+comm -23 &lt;(find . -maxdepth 1 -name &#x27;*.md&#x27; -not -name MEMORY.md -printf &#x27;%f\n&#x27; | sort) \
+         &lt;(grep -oE &#x27;\]\([a-zA-Z0-9_.-]+\.md\)&#x27; MEMORY.md | tr -d &#x27;()[]&#x27; | sort -u)
+```
+
+**Use `find`, not `ls`, for the real-file side.** In this environment `ls` is
+aliased to `eza -a --icons=always`, which prepends an icon glyph to every
+filename — that silently broke this exact comparison on first use (every
+real file looked &quot;orphaned&quot; and every indexed link looked &quot;dead&quot; because
+neither side&#x27;s strings matched anymore). `find -printf &#x27;%f\n&#x27;` bypasses the
+alias entirely; don&#x27;t swap it back for `ls` even if it looks equivalent.
+
+Anything the first command prints is an **orphaned memory** — written but not
+indexed, at real risk of being forgotten (this happened to
+`feedback_dev_means_staging_tier.md` on 2026-08-17, found and fixed by this
+exact check). Also check the reverse — an index line whose target file
+doesn&#x27;t exist — with the comparison flipped (`comm -13`).
+
+`MEMORY.md` truncates after 200 lines in context; if the file is approaching
+that, flag it as needing consolidation (merge/retire stale entries) rather
+than letting new entries silently fall off the loaded window.
+
+## Step 2 -- friction sweep
+
+Grep memory bodies (not just descriptions) for language that signals a
+recurring pain point rather than a one-off note:
+
+```sh
+grep -lriE &#x27;confus|convoluted|ambiguous|mismatch|contradict|duplicat|burned [0-9]+|repeatedly|again\b|rediscover&#x27; *.md | grep -v MEMORY.md
+```
+
+Read the hits. Group by theme, not by file. A theme worth acting on shows up
+**independently in two or more memories** written at different times about
+different projects — that&#x27;s a structural gap, not a one-off. A theme that
+only appears once is probably already handled by the memory itself; don&#x27;t
+manufacture a skill for it.
+
+## Step 3 -- contradiction check
+
+Within a theme cluster from Step 2, check whether the memories actually agree.
+Two feedback memories giving opposite instructions on the same situation is
+worse than either being silent — surface it to the user rather than picking
+one side.
+
+## Step 4 -- name the candidate, don&#x27;t just build it
+
+For each theme that clears Step 2&#x27;s bar, state: what the friction is
+concretely, which memories evidence it (cite them), and what form fixes it
+structurally (a glossary/reference skill, a hook that enforces a check, a
+consolidation of overlapping memories, or a fix to an existing skill&#x27;s
+missing step). Then hand the list to the user as real options — per this
+environment&#x27;s elicitation-first convention, a picker of what to build next,
+not a unilateral build.
+
+## When *not* to run this
+
+Don&#x27;t run a full sweep just to answer a specific factual question — that&#x27;s
+ordinary memory recall. This is for explicit &quot;look back and find patterns&quot;
+requests, or a periodic hygiene pass the user asks for.</pre>
+    </details>
+  </section>
+
+  <footer>
+    Part of the <a href="/">Polyhydra Skills</a> catalog. Requires
+    <a href="https://claude.com/product/claude-code">Claude Code</a>.
+  </footer>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>opinionated-defaults — Polyhydra Skills</title>
+<meta name="description" content="Apply a small, curated bundle of Claude Code settings.json tweaks — auto-compact earlier (~40% of context instead of near-100%), file checkpointing for /rewind, background compaction precompute, and t">
+<link rel="stylesheet" href="/assets/style.css">
+</head>
+<body>
+<div class="page">
+
+  <p class="eyebrow"><a href="/">Polyhydra Skills</a> &nbsp;/&nbsp; Dev Tools</p>
+  <h1>opinionated-defaults</h1>
+  <p class="tagline">Apply a small, curated bundle of Claude Code settings.json tweaks — auto-compact earlier (~40% of context instead of near-100%), file checkpointing for /rewind, background compaction precompute, and terminal progress indicators. Use when the user asks to &quot;tune up&quot; their Claude Code settings, apply the recommended/opinionated defaults, make auto-compact trigger sooner, or mentions this skill by name.</p>
+  <div class="badges"><span class="badge">Dev Tools</span></div>
+  <hr class="rule" />
+
+  <div class="install">
+    <p>Drop this in — save the block below as <code>~/.claude/skills/opinionated-defaults/SKILL.md</code>, or run:</p>
+    <pre>mkdir -p ~/.claude/skills/opinionated-defaults
+cat &gt; ~/.claude/skills/opinionated-defaults/SKILL.md &lt;&lt;'EOF'
+# (paste the full source block below into this file)
+EOF</pre>
+  </div>
+
+  <section>
+    <h2>Full source</h2>
+    <details>
+      <summary>SKILL.md — copy everything inside</summary>
+      <pre># Opinionated Defaults
+
+A fixed, portable bundle of four `settings.json` tweaks — no homelab paths, no
+personal branding, safe to hand to anyone running Claude Code. Applying it is
+a **merge**, never a replace: read the target file first, keep everything
+already there, and only touch the four keys below.
+
+## The bundle
+
+| Key | Value | Why |
+| --- | --- | --- |
+| `autoCompactEnabled` | `true` | Turns on auto-compact at all. |
+| `autoCompactWindow` | computed — see below | Compact fires once conversation tokens reach this count. Default Claude Code behavior waits until the context is nearly full (~97% on some models); this bundle triggers around 40% instead, trading a bit more compaction for a session that never feels close to the edge. |
+| `fileCheckpointingEnabled` | `true` | Snapshots files before edits so `/rewind` can restore them. Pure safety net, no downside. |
+| `precomputeCompactionEnabled` | `true` | Computes the compaction summary in the background before it&#x27;s needed, so hitting the threshold doesn&#x27;t stall the session. Only has an effect when `autoCompactEnabled` is on. |
+| `terminalProgressBarEnabled` | `true` | Emits OSC 9;4 taskbar/dock progress during long operations. Harmless where the terminal doesn&#x27;t support it. |
+
+## Computing `autoCompactWindow`
+
+This is the one value that isn&#x27;t a flat constant — it&#x27;s a token count, not a
+percentage, and `settings.json` clamps it to `[100000, 1000000]`. To hit
+&quot;~40% of context&quot;:
+
+1. Figure out the target&#x27;s actual context window. In order of preference:
+   - Ask the user directly if it&#x27;s not obvious (&quot;Are you on the 1M-token
+     context, or the standard 200K window?&quot;). Direct Anthropic API access on
+     Sonnet 5 defaults to the native 1M window; most other setups (Console,
+     third-party providers, older/other models) are 200K unless the user has
+     explicitly enabled extended context.
+   - If genuinely unknown, default to the 1M assumption (see step 2) and say
+     so explicitly rather than silently guessing 200K.
+2. Compute `round(context_window * 0.4)`, then clamp to `[100000, 1000000]`.
+   - 1M window → 400000 (clean, no clamping).
+   - 200K window → raw value is 80000, below the floor, so the clamped
+     result is 100000 (~50%, not 40%). Tell the user this explicitly — don&#x27;t
+     silently write a number that doesn&#x27;t match what they asked for.
+3. Write the clamped integer to `autoCompactWindow`.
+
+## Applying it
+
+1. **Ask which file** — global (`~/.claude/settings.json`, applies to every
+   project) or project (`.claude/settings.json`, this repo only). Default to
+   global unless the user says otherwise; that&#x27;s what this bundle is for.
+2. **Read the target file first.** If it doesn&#x27;t exist, create it fresh with
+   just this bundle. If it exists, merge — do not touch any other key,
+   including if the user has already customized `autoCompactWindow` to
+   something else (ask before overwriting a value that looks intentional
+   rather than default/absent).
+3. **Write the four keys**, using the computed `autoCompactWindow` from
+   above.
+4. **Validate**: `jq -e &#x27;.autoCompactEnabled, .autoCompactWindow, .fileCheckpointingEnabled, .precomputeCompactionEnabled, .terminalProgressBarEnabled&#x27; &lt;target-file&gt;` — all five should print without error.
+5. **Report back** what was set and, if the context window was assumed
+   rather than confirmed, flag that assumption so the user can correct it
+   later with `/autocompact &lt;value&gt;` if their actual window differs.
+
+## Idempotency
+
+Safe to re-run. If all four keys are already present with these exact
+values, say so and make no changes rather than rewriting the file.</pre>
+    </details>
+  </section>
+
+  <footer>
+    Part of the <a href="/">Polyhydra Skills</a> catalog. Requires
+    <a href="https://claude.com/product/claude-code">Claude Code</a>.
+  </footer>
+
+</div>
+</body>
+</html>

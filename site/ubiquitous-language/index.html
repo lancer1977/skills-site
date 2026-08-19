@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ubiquitous-language — Polyhydra Skills</title>
+<meta name="description" content="Shared glossary for terms that keep getting conflated across projects -- Version, Stage/Tier, Delivery Phase (V0/V1), MFD Phase (Phase 0 / R-numbers), and the task hierarchy (epic/issue/PR). Use when ">
+<link rel="stylesheet" href="/assets/style.css">
+</head>
+<body>
+<div class="page">
+
+  <p class="eyebrow"><a href="/">Polyhydra Skills</a> &nbsp;/&nbsp; Uncategorized</p>
+  <h1>ubiquitous-language</h1>
+  <p class="tagline">Shared glossary for terms that keep getting conflated across projects -- Version, Stage/Tier, Delivery Phase (V0/V1), MFD Phase (Phase 0 / R-numbers), and the task hierarchy (epic/issue/PR). Use when scoping or reporting status and it&#x27;s unclear whether &quot;V1&quot;, &quot;Phase 0&quot;, &quot;shipped&quot;, or &quot;dev&quot; means the same thing here as it did on another project, or when two projects use overlapping numbering (S-steps, R-numbers, waves) that shouldn&#x27;t be assumed to line up.</p>
+  <div class="badges"><span class="badge">Uncategorized</span></div>
+  <hr class="rule" />
+
+  <div class="install">
+    <p>Drop this in — save the block below as <code>~/.claude/skills/ubiquitous-language/SKILL.md</code>, or run:</p>
+    <pre>mkdir -p ~/.claude/skills/ubiquitous-language
+cat &gt; ~/.claude/skills/ubiquitous-language/SKILL.md &lt;&lt;'EOF'
+# (paste the full source block below into this file)
+EOF</pre>
+  </div>
+
+  <section>
+    <h2>Full source</h2>
+    <details>
+      <summary>SKILL.md — copy everything inside</summary>
+      <pre># Ubiquitous language
+
+Five different axes get called &quot;version,&quot; &quot;stage,&quot; or &quot;status&quot; across this
+portfolio. They are independent — a thing can be V1, in the `dev` tier, on
+Phase 0 R6, and still only &quot;drafted.&quot; Naming the axis explicitly prevents
+the recurring confusion this skill exists to fix.
+
+## The five axes
+
+| Axis | What it answers | Values | Scope |
+|---|---|---|---|
+| **Version** | Which build? | semver tag (`v1.4.3-telemetry.1`), package/image tag | One repo/artifact. A multi-repo delivery has one version *per repo* — they are not synonyms. (`xu4-support v0.1.2` and `xu4 engine v1.4.3-telemetry.1` are two different numbers for one delivery, not a mismatch to reconcile.) |
+| **Stage / Tier** | Where is it running? | `dev` (safe QA/rapid-test tier — not &quot;staging&quot;, see [[feedback_dev_means_staging_tier]]) → `production` | One deployment target. Orthogonal to version and delivery phase. |
+| **Delivery Phase** | How mature is the product? | V0 (inventory state — working/partial/stale code, no release claim) → V1 (smallest coherent, released outcome) | Per the `v1-delivery-shaping` skill. Something can be V0 code already live in `production`, or V1-defined work still sitting in `dev`. |
+| **MFD Phase** | Is this approved to build? | Phase 0 (scoping/approval gate) → approved → implementing. R1, R2, ... R9 are requirement checkpoints *inside one Phase 0 packet* | Per the `mapped-frontier-development` skill. R-numbers reset per packet/issue — R6 on one issue has no relationship to R6 on another. |
+| **Task hierarchy** | What&#x27;s the unit of work and how far along is it? | Epic → Issue → Sub-issue → PR | GitHub-native. See below for the states between &quot;opened&quot; and &quot;live.&quot; |
+
+Anything else that looks like a version/phase marker but isn&#x27;t one of the
+above — epic-local step letters (`S2`, `S4`...), a retirement &quot;wave&quot; number,
+a sprint name — is **local to that one epic or program**. Don&#x27;t assume it
+maps onto another project&#x27;s numbering, and don&#x27;t reuse it as if it were a
+portfolio-wide standard.
+
+## Retire &quot;shipped&quot;
+
+&quot;Shipped&quot; gets used for at least four different real states and causes real
+confusion when read back later (e.g. a PR marked &quot;shipped&quot; that turns out to
+still be a draft with unwired config). Use the precise word instead:
+
+1. **drafted** — code pushed, PR open as draft, not yet reviewed.
+2. **ready for review** — PR undrafted, review requested.
+3. **merged** — landed on the integration branch (`dev` in this portfolio&#x27;s
+   convention — see the global `main` triggers real deployments rule).
+4. **deployed** — running in a named tier, not yet confirmed working.
+5. **live** — independently verified reachable/working in that tier (a real
+   response checked, not just &quot;the deploy step finished&quot;).
+
+## Status-report template
+
+When reporting or recording project state (memory, issue comment, status
+update), state the axes that actually apply instead of one ambiguous word:
+
+&gt; `&lt;project&gt;`: version `&lt;tag&gt;` (repo: `&lt;name&gt;`), tier: `&lt;dev|production&gt;`,
+&gt; delivery phase: `&lt;V0|V1&gt;`, task state: `&lt;drafted|ready for review|merged|
+&gt; deployed|live&gt;`.
+
+Omit an axis only when it&#x27;s genuinely not applicable (e.g. a docs-only PR has
+no version/tier). Don&#x27;t collapse multiple axes into one word like &quot;done&quot; or
+&quot;shipped.&quot;
+
+## Related skills
+
+- `mapped-frontier-development` — owns the MFD Phase / R-number lifecycle in
+  full; this glossary just places it relative to the other axes.
+- `v1-delivery-shaping` — owns the V0/V1 delivery-phase definition in full;
+  same relationship.
+- `memory-audit` — periodically checks whether project memories are using
+  these terms consistently, among other hygiene checks.</pre>
+    </details>
+  </section>
+
+  <footer>
+    Part of the <a href="/">Polyhydra Skills</a> catalog. Requires
+    <a href="https://claude.com/product/claude-code">Claude Code</a>.
+  </footer>
+
+</div>
+</body>
+</html>

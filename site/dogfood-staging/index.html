@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>dogfood-staging — Polyhydra Skills</title>
-<meta name="description" content="Take a late-development app from &quot;code works locally&quot; to a durable staging deployment (e.g. staging.&lt;app&gt;.com) that the owner actually uses day-to-day, then track what dogfooding surfaces and decide w">
+<meta name="description" content="Take a late-development app from &quot;code works locally&quot; to a durable dev/QA deployment (e.g. dev.&lt;app&gt;.com) that the owner actually uses day-to-day, then track what dogfooding surfaces and decide when i">
 <link rel="stylesheet" href="/assets/style.css">
 </head>
 <body>
@@ -12,7 +12,7 @@
 
   <p class="eyebrow"><a href="/">Polyhydra Skills</a> &nbsp;/&nbsp; Uncategorized</p>
   <h1>dogfood-staging</h1>
-  <p class="tagline">Take a late-development app from &quot;code works locally&quot; to a durable staging deployment (e.g. staging.&lt;app&gt;.com) that the owner actually uses day-to-day, then track what dogfooding surfaces and decide when it&#x27;s ready to graduate to production. Use when a project has a defined V1/stabilizing scope and the next step is standing up a semi-durable staging environment, when the user says &quot;dogfood&quot;, &quot;staging site&quot;, &quot;staging.&lt;app&gt;.com&quot;, or asks whether a project is ready for a staging cutover.</p>
+  <p class="tagline">Take a late-development app from &quot;code works locally&quot; to a durable dev/QA deployment (e.g. dev.&lt;app&gt;.com) that the owner actually uses day-to-day, then track what dogfooding surfaces and decide when it&#x27;s ready to graduate to production. Use when a project has a defined V1/stabilizing scope and the next step is standing up a semi-durable dev-tier environment, when the user says &quot;dogfood&quot;, &quot;staging site&quot;, &quot;dev site&quot;, &quot;dev.&lt;app&gt;.com&quot;, or asks whether a project is ready for a dev-tier cutover.</p>
   <div class="badges"><span class="badge">Uncategorized</span></div>
   <hr class="rule" />
 
@@ -30,12 +30,18 @@ EOF</pre>
       <summary>SKILL.md — copy everything inside</summary>
       <pre># Dogfood Staging
 
-The move from &quot;V1 is stabilizing&quot; to &quot;this app is real&quot; is a durable staging
+The move from &quot;V1 is stabilizing&quot; to &quot;this app is real&quot; is a durable dev-tier
 deployment the owner actually lives in, not a demo. This skill sequences that
 move and composes existing skills for the mechanics rather than duplicating
 them — it does not replace `v1-delivery-shaping`, `mapped-frontier-development`,
 `r620-deploy`/`stack-apply`, or `cloudflare-dns`; it&#x27;s the checklist that
 strings them together at this specific point in a project&#x27;s life.
+
+Terminology: this workspace calls the safe QA/rapid-test tier **`dev`**, not
+&quot;staging&quot; — see [[feedback_dev_means_staging_tier]] and the `ubiquitous-language`
+skill&#x27;s Stage/Tier axis. The skill is still named `dogfood-staging` (the
+*concept* of dogfooding a pre-production tier), but every hostname/stack/
+branch this produces should say `dev`.
 
 ## When this applies
 
@@ -43,11 +49,14 @@ strings them together at this specific point in a project&#x27;s life.
   is in or past stabilization — not still adding core feature scope.
 - The goal is a **standing, durable** environment the owner dogfoods against
   repeatedly (days/weeks), not a one-off demo or a throwaway preview build.
-- Distinct from the app&#x27;s existing `dev.&lt;app&gt;.com` / `debug.&lt;app&gt;.com` /
-  `localhost` tiers (per whatever ADRs the app already has — check
-  `docs/decisions/` first): staging is the tier right before production,
-  carries closer-to-real config, and is where the owner notices real gaps by
-  actually using the thing.
+- Distinct from the app&#x27;s `debug.&lt;app&gt;.com` / `localhost` tiers if it has
+  them (per whatever ADRs the app already has — check `docs/decisions/`
+  first): `dev` here is the tier right before production, carries
+  closer-to-real config, and is where the owner notices real gaps by
+  actually using the thing. If a repo already has its own established
+  `staging.` convention predating this glossary, don&#x27;t silently rename it —
+  flag the mismatch and ask, per [[feedback_dev_means_staging_tier]]&#x27;s &quot;How
+  to apply&quot; note.
 
 If the project is still adding V1 scope, or doesn&#x27;t have a recorded V1
 definition yet, run `v1-delivery-shaping` first — dogfooding an undefined
@@ -58,10 +67,10 @@ scope just produces noise about missing features that were never promised.
 1. Confirm the V1 definition (or current stabilization scope) is current —
    re-read the owning epic, don&#x27;t assume last session&#x27;s understanding still
    holds.
-2. Explicitly list what does **not** need to work yet for staging to be
+2. Explicitly list what does **not** need to work yet for the dev tier to be
    useful. Dogfooding surfaces real gaps fastest when the owner knows which
    gaps are already known-and-deferred versus genuinely new.
-3. If standing up staging is itself a material change (new public hostname,
+3. If standing up the dev tier is itself a material change (new hostname,
    new secret scope, new auth callback surface, a data-retention decision),
    run it through `mapped-frontier-development` Phase 0 rather than treating
    DNS + deploy as routine — this is exactly the &quot;material deployment
@@ -69,42 +78,67 @@ scope just produces noise about missing features that were never promised.
 
 ## Phase 2 — Stand up the environment
 
-1. **Naming**: `staging.&lt;app-domain&gt;` (e.g. `staging.channelcheevos.com`),
-   distinct from any existing `dev.`/`debug.` tier. Confirm the actual domain
-   the app uses — check existing ADRs/Infisical config before assuming
-   `polyhydragames.com`/`polyhydra.app`; some apps (e.g. channel-cheevos) use
-   their own domain.
+1. **Naming**: `dev.&lt;app-domain&gt;` (e.g. `dev.channelcheevos.com`). Confirm
+   the actual domain the app uses — check existing ADRs/Infisical config
+   before assuming `polyhydragames.com`/`polyhydra.app`; some apps (e.g.
+   channel-cheevos) use their own domain.
 2. **DNS**: use the `cloudflare-dns` skill — create the record before
    deploying, not after (&quot;DNS first, not as an afterthought&quot; is called out
    explicitly in `r620-deploy` because skipping it was real, avoidable
    friction previously).
 3. **Deploy**: use `r620-deploy` for a first-time stack, `stack-apply` to
-   reconcile an existing one. Staging must be a tracked Portainer/Swarm stack
-   sourced from the repo&#x27;s `homelab-gitops` definition — not a rogue local
-   `docker run`/build (see the repo&#x27;s own no-rogue-builds policy if it has
-   one). Verify with the same rigor as production: real TLS cert subject,
-   clean startup logs, a real endpoint through the public path — staging
-   being &quot;less important&quot; than prod is not a reason to skip verification;
-   it&#x27;s the thing the owner is about to trust daily.
-4. **Secrets**: staging gets its own credential set, never copied production
-   secrets. Use `infisical-lookup` to find where sibling secrets for this app
-   already live, `secret-apply` to generate/land new ones. Check whether the
-   app has its own dogfood/staging secret-boundary ADR first (e.g.
-   channel-cheevos&#x27;s `docs/decisions/0001-auth0-dogfood-boundary.md` pattern
-   — a real precedent for &quot;staging must not become an implicit
+   reconcile an existing one. The dev tier must be a tracked Portainer/Swarm
+   stack sourced from the repo&#x27;s `homelab-gitops` definition — not a rogue
+   local `docker run`/build (see the repo&#x27;s own no-rogue-builds policy if it
+   has one). Verify with the same rigor as production: real TLS cert
+   subject, clean startup logs, a real endpoint through the public path —
+   the dev tier being &quot;less important&quot; than prod is not a reason to skip
+   verification; it&#x27;s the thing the owner is about to trust daily.
+   - **From a sandboxed/background session**, standing up a brand-new
+     stateful stack (a new DB, a new secret-bearing service) hits a real
+     wall documented in `r620-remote-ops`: creating *new* Docker Swarm
+     secrets can&#x27;t be done invisibly (the value would have to be typed into
+     a visible tool call to reach Portainer&#x27;s API) — see that skill&#x27;s
+     &quot;Creating NEW secrets on r620&quot; section and its
+     `scripts/create-swarm-secrets.sh` helper. Prepare everything else
+     (compose files, network, non-secret file placement via the one-shot-
+     stack trick), then hand the secret-creation step to the operator via
+     `!` rather than attempting a workaround.
+4. **Secrets**: the dev tier gets its own credential set, never copied
+   production secrets. Use `infisical-lookup` to find where sibling secrets
+   for this app already live, `secret-apply` to generate/land new ones.
+   Check whether the app has its own dogfood/dev secret-boundary ADR first
+   (e.g. channel-cheevos&#x27;s `docs/decisions/0001-auth0-dogfood-boundary.md`
+   pattern — a real precedent for &quot;the dev tier must not become an implicit
    production/provider-migration change&quot;).
-5. **Auth callbacks**: if the app has OIDC/OAuth login, staging needs its own
-   callback/logout/origin allowlist entries (see `keycloak-admin` skill or
-   the app&#x27;s own auth provider config) — don&#x27;t reuse production or dev
-   callback URLs.
+   - **Infisical folders must already exist before `secret-apply`/
+     `infisical secrets set` can write into them** — confirmed 2026-08-17/18:
+     writing to a brand-new `&lt;env&gt;/&lt;path&gt;` combination fails (the CLI&#x27;s own
+     error is swallowed by `secret-apply.sh`&#x27;s stderr redirect, surfacing
+     only as a generic `FAILED`). Create the folder first:
+     `infisical secrets folders create --name &lt;last-path-segment&gt; --path
+     &lt;parent-path&gt; --env &lt;env&gt; --domain &lt;infisical-domain&gt; --projectId
+     &lt;id&gt;`. A brand-new tier (e.g. a first-ever `dev` environment secret for
+     an app whose Infisical config only had `prod` before) will hit this —
+     don&#x27;t assume the write failure means bad credentials or a typo&#x27;d path
+     before checking whether the folder exists.
+5. **Auth callbacks**: if the app has OIDC/OAuth login, the dev tier needs
+   its own callback/logout/origin allowlist entries (see `keycloak-admin`
+   skill or the app&#x27;s own auth provider config) — don&#x27;t reuse production
+   callback URLs. Check the app&#x27;s own provisioning tooling first (e.g. a
+   `scripts/provision-*-client.py` in its repo) before hand-rolling client
+   creation via raw Keycloak admin API calls — a canonical script may
+   already encode conventions (realm, secret sourcing direction, staged
+   enable, group mappers) that a hand-rolled version will miss or get
+   backwards.
 
 ## Phase 3 — Dogfood tracking
 
-1. Use the staging environment for real, ongoing use — not a single smoke
-   test. The point is surfacing gaps only real use finds.
+1. Use the dev environment for real, ongoing use — not a single smoke test.
+   The point is surfacing gaps only real use finds.
 2. File every gap found as a GitHub issue on the app&#x27;s repo, tagged so
    dogfood-sourced issues are distinguishable from originally-planned V1
-   scope (e.g. a `dogfood` label). This keeps &quot;what staging use taught us&quot;
+   scope (e.g. a `dogfood` label). This keeps &quot;what dev-tier use taught us&quot;
    separate from &quot;what we already knew we&#x27;d build.&quot;
 3. Triage using the same severity judgment as `v1-delivery-shaping`&#x27;s P0–P2
    language: repair blockers before graduation, defer polish to tracked
@@ -115,7 +149,7 @@ scope just produces noise about missing features that were never promised.
 
 ## Phase 4 — Graduation criteria
 
-Staging is ready to inform a production cutover decision when:
+The dev tier is ready to inform a production cutover decision when:
 
 - No open P0/P1 dogfood-tagged issues remain.
 - The owner has used it continuously (not just tested it) for a length of
@@ -125,21 +159,26 @@ Staging is ready to inform a production cutover decision when:
   above) are proven repeatable, not just &quot;worked once.&quot;
 
 Graduating to production is its own decision requiring its own explicit
-confirmation — this skill stands up and validates staging; it does not
+confirmation — this skill stands up and validates the dev tier; it does not
 authorize a production cutover, merge, or DNS cutover to a production
 hostname. Treat that as a separate, explicitly confirmed action per this
 project&#x27;s standing authorization rules for outward-facing changes.
 
 ## Related skills
 
-- `v1-delivery-shaping` — defines the scope staging is meant to validate;
-  run first if V1 isn&#x27;t yet defined.
-- `mapped-frontier-development` — Phase 0 packet for standing up staging when
-  it&#x27;s a material change, not routine.
+- `ubiquitous-language` — the Stage/Tier axis definition (`dev` vs
+  production) this skill&#x27;s naming follows.
+- `v1-delivery-shaping` — defines the scope the dev tier is meant to
+  validate; run first if V1 isn&#x27;t yet defined.
+- `mapped-frontier-development` — Phase 0 packet for standing up the dev
+  tier when it&#x27;s a material change, not routine.
 - `cloudflare-dns`, `r620-deploy`, `stack-apply` — the actual DNS/deploy
   mechanics this skill sequences but doesn&#x27;t duplicate.
-- `infisical-lookup`, `secret-apply` — staging&#x27;s own secret set.
-- `keycloak-admin` — staging-specific OIDC callback config, if applicable.
+- `r620-remote-ops` — the sandboxed-session deploy path, including the
+  new-secret-creation hard boundary noted above.
+- `infisical-lookup`, `secret-apply` — the dev tier&#x27;s own secret set,
+  including the folder-must-exist-first gotcha noted above.
+- `keycloak-admin` — dev-tier-specific OIDC callback config, if applicable.
 - `quest-log` — surfacing dogfood-tagged issues if the repo already uses it.</pre>
     </details>
   </section>

@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>portainer-api — Polyhydra Skills</title>
+<meta name="description" content="Manage Portainer environments, stacks, services, containers, and logs through the Portainer HTTP API. Use when the user wants you to inspect or update Portainer-managed stacks, restart or diagnose con">
+<link rel="stylesheet" href="/assets/style.css">
+</head>
+<body>
+<div class="page">
+
+  <p class="eyebrow"><a href="/">Polyhydra Skills</a> &nbsp;/&nbsp; Uncategorized</p>
+  <h1>portainer-api</h1>
+  <p class="tagline">Manage Portainer environments, stacks, services, containers, and logs through the Portainer HTTP API. Use when the user wants you to inspect or update Portainer-managed stacks, restart or diagnose containers/services, fetch stack files, compare deployed vs intended compose content, or troubleshoot Traefik/Swarm/container state without using the Portainer web UI.</p>
+  <div class="badges"><span class="badge">Uncategorized</span></div>
+  <hr class="rule" />
+
+  <div class="install">
+    <p>Drop this in — save the block below as <code>~/.claude/skills/portainer-api/SKILL.md</code>, or run:</p>
+    <pre>mkdir -p ~/.claude/skills/portainer-api
+cat &gt; ~/.claude/skills/portainer-api/SKILL.md &lt;&lt;'EOF'
+# (paste the full source block below into this file)
+EOF</pre>
+  </div>
+
+  <section>
+    <h2>Full source</h2>
+    <details>
+      <summary>SKILL.md — copy everything inside</summary>
+      <pre># Portainer API
+
+Use this skill when Portainer is the control plane or source of truth for a Docker/Swarm deployment.
+
+Prefer read-only inspection first, then make the smallest safe change.
+
+## Quick workflow
+
+1. Load auth from the local secrets file.
+2. Resolve the correct endpoint/environment ID.
+3. Inspect the stack, service, or container before making changes.
+4. For stack updates, fetch the current stack file first.
+5. Make one deliberate change and verify the result.
+
+## Auth bootstrap
+
+Use the helper script for shell-safe auth/bootstrap:
+- `scripts/portainer_env.sh`
+
+The helper scripts source `scripts/lib/secrets.sh` and load optional local secrets from `~/.config/secrets/polyhydra.env` automatically. Put a Portainer API key there as `PORTAINER_TOKEN=ptr_...` and keep the file readable only by its owner. The helper is silent and exposes authenticated requests through `portainer_curl`; do not add credentials to curl arguments manually.
+
+When you need exact request patterns or endpoint guidance, read:
+- `references/portainer-workflows.md`
+- `references/stack-updates.md`
+- `references/traefik-debug.md`
+
+## Local assumptions
+
+Common local setup:
+- Portainer URL: `https://192.168.0.21:9443`
+- Common endpoint: `r620` (often endpoint ID `2`, but verify)
+- Secrets file: `~/.config/secrets/polyhydra.env`
+
+## Safety rules
+
+- Inspect before restarting or redeploying.
+- For stack updates, capture the current stack file before overwriting it.
+- Do not claim a redeploy succeeded unless you verify the API response and post-change state.
+- Do not enable curl verbose/trace output for authenticated requests or print resolved credentials.
+- Stack update responses echo `Env[].value` back in cleartext -- never print or denylist-filter a raw stack API response; allowlist the specific fields you need instead. See `references/stack-updates.md` for the confirmed incident and the fix baked into `update_stack.sh`.
+- Portainer does not carry forward a stack&#x27;s previously-set env vars on a stack-file update -- if the compose file references `${VAR}`, pass it explicitly via `update_stack.sh`&#x27;s `env-file` argument or it silently goes blank.
+- Distinguish clearly between:
+  - Traefik/browser-facing TLS
+  - backend service TLS
+  - container/service health
+  - Portainer stack definition vs runtime state
+
+## Common tasks
+
+### Inspect Portainer state
+Use the auth script, then:
+- list endpoints
+- list stacks
+- inspect a stack
+- fetch a stack file
+- inspect swarm services
+- inspect container logs
+
+### Update a stack
+Use the helper scripts as templates/tools:
+- `scripts/backup_stack.sh`
+- `scripts/update_stack.sh`
+- `scripts/inspect_service.sh`
+
+Always fetch the current stack file first and keep a backup copy before applying changes.
+
+### Diagnose Traefik-managed services
+Read:
+- `references/traefik-debug.md`
+
+Typical sequence:
+1. inspect stack file
+2. inspect Traefik service spec
+3. inspect dynamic file config path(s)
+4. compare intended hostnames/ports with live backend reachability
+5. verify certificate path separately from backend health
+
+## When to read references
+
+- For Portainer endpoint discovery and common curl patterns: `references/portainer-workflows.md`
+- For safe stack replacement/update flows: `references/stack-updates.md`
+- For Traefik + Portainer troubleshooting: `references/traefik-debug.md`</pre>
+    </details>
+  </section>
+
+  <footer>
+    Part of the <a href="/">Polyhydra Skills</a> catalog. Requires
+    <a href="https://claude.com/product/claude-code">Claude Code</a>.
+  </footer>
+
+</div>
+</body>
+</html>

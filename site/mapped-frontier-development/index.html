@@ -35,6 +35,10 @@ implementation, then prove delivery against that boundary. This process is
 tool-agnostic: it runs on GitHub issues/PRs and plain files, so it works the
 same way under Claude Code as it did under Codex.
 
+Phase 0 and its R-numbers are one axis among several that get conflated
+across projects (version, tier, delivery phase, task state) — see the
+`ubiquitous-language` skill for how they relate and don&#x27;t overlap.
+
 ## Start with the authority
 
 1. Identify or create the owning GitHub issue before planning implementation.
@@ -76,11 +80,22 @@ same way under Claude Code as it did under Codex.
   evidence where applicable, deviations, rollback evidence, and deferred
   follow-ups before declaring work complete.
 
+## Presentation
+
+Every Phase 0 packet also gets a short presentation, not just the packet
+and brief — see `references/presentation-workflow.md` for what goes in it,
+when to draft it, and the default format (a self-contained HTML deck
+published via the Artifact tool, built with real content and real project
+imagery, never lorem or generic stock art). This is a local practice
+layered on top of the canonical MFD product, not part of it.
+
 ## Resources
 
 - `assets/mapped-frontier-build-packet.md` — copy for a new Phase 0 packet.
 - `assets/mapped-frontier-approval-brief.md` — copy for the issue decision.
 - `references/canonical-sources.md` — canonical policy and source ownership.
+- `references/presentation-workflow.md` — presentation companion for every
+  Phase 0 packet (local addition, non-canonical).
 - `provenance.json` — hashes proving the bundled templates match their
   immutable source revisions from the original `mapped-frontier-development`
   and `mapped-frontier-core` repos.</pre>
