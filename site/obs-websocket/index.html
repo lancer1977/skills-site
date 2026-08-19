@@ -39,11 +39,13 @@ in a worktree at `~/worktrees/obs-websocket-mcp-v1` until the V1 PR merges.
 ## First: check the MCP tools are actually live
 
 The `obs.*` tools (`obs.get_status`, `obs.list_scenes`, `obs.list_sources`,
-`obs.set_current_scene`, `obs.set_source_enabled`, `obs.create_browser_source`,
-`obs.start_stream`/`stop_stream`, `obs.start_record`/`stop_record`) come from
-the registered MCP server, not from this skill directly. If they&#x27;re not
-showing up as available tools, the server isn&#x27;t registered in this session —
-see &quot;Registering the MCP server&quot; below.
+`obs.set_current_scene`, `obs.set_source_enabled`, `obs.remove_source`,
+`obs.create_browser_source`, `obs.start_stream`/`stop_stream`,
+`obs.start_record`/`stop_record`, `obs.get_input_settings`,
+`obs.get_scene_item_transform`, `obs.get_source_filters`, `obs.export_snapshot`)
+come from the registered MCP server, not from this skill directly. If they&#x27;re
+not showing up as available tools, the server isn&#x27;t registered in this session
+— see &quot;Registering the MCP server&quot; below.
 
 ## Credentials
 
@@ -100,7 +102,11 @@ caught until testing against the real OBS instance. Confirmed correct via
   — camelCase.
 
 **Live-verified end-to-end** (against real OBS 32.2.1, websocket 5.7.4):
-`get_status`, `list_scenes`, `list_sources`, `create_browser_source`.
+`get_status`, `list_scenes`, `list_sources`, `create_browser_source`,
+`get_input_settings`, `get_scene_item_transform`, `get_source_filters`,
+`export_snapshot` — the snapshot tools returned a clean, error-free dump of
+both live scenes (11 sources total) on first real run, no kwarg-naming
+surprises.
 **Still mock-only, not yet exercised against real OBS**: `set_current_scene`,
 `set_source_enabled`, `start_stream`/`stop_stream`, `start_record`/`stop_record`.
 If any of these misbehave, check the actual installed `obsws_python`
@@ -116,6 +122,37 @@ optional `width`/`height`, default 1920x1080). See
 [[project_chop_it_status_202608]] for the live chop-it HLS test URL and a
 known caveat about its manifest-replacement behavior in OBS Media/Browser
 sources.
+
+## Scene/source inventory (snapshot)
+
+Four read-only tools introspect OBS layout and configuration — they work
+regardless of `OBS_ALLOW_WRITES` since they only query, never modify:
+
+- `obs.get_input_settings` (args: `source_name`) — returns `{kind, settings}`
+  for a single input/source (e.g. a browser source&#x27;s URL, width, height).
+- `obs.get_scene_item_transform` (args: `scene_name`, `item_id`) — returns
+  a scene item&#x27;s transform dict (position, scale, rotation, crop, bounds).
+- `obs.get_source_filters` (args: `source_name`) — returns a list of filters
+  applied to a source (name, kind, enabled, settings).
+- `obs.export_snapshot` (no args) — full nested dump: every scene and every
+  source&#x27;s kind, settings, transform, and filters in a single call.
+
+**Snapshot convention:** `obs.export_snapshot` results get written to
+`snapshots/&lt;timestamp&gt;.json` in the `obs-websocket-mcp` repo, git-tracked,
+so scene layouts are diffable over time and act as a durable journal.
+Built and live-verified as [obs-websocket-mcp#5](https://github.com/lancer1977/obs-websocket-mcp/issues/5).
+
+**Automatic on stream start/stop**: `obs.start_stream` and `obs.stop_stream`
+each call `_capture_snapshot()` internally before performing the action —
+`snapshots/&lt;timestamp&gt;_stream-start.json` / `..._stream-stop.json`, no
+manual `export_snapshot` call needed for real stream sessions. Best-effort:
+a snapshot failure never blocks the actual stream action (caught and
+swallowed in `app/tool_handlers.py`). See
+[obs-websocket-mcp#6](https://github.com/lancer1977/obs-websocket-mcp/issues/6).
+
+Snapshots are **capture-only for now** — no restore/apply-back-into-OBS
+capability exists yet (a deliberately separate, higher-risk mutating
+follow-up, not yet filed).
 
 ## DreadTV&#x27;s parallel adapter
 
