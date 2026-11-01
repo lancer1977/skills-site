@@ -14,11 +14,14 @@ runs on, and renders:
   `SKILL.md` source in a copy-paste block.
 - `site/index.html` — a searchable catalog grouped by category.
 
-Some skills talk to my own homelab infrastructure (internal hosts, deploy topology,
-credentials) and are listed in `scripts/redacted.json`. Those get a generic
-description and a "when to use it" list instead of the real source — see that file to
-add/adjust which skills are treated this way, and `scripts/categories.json` for the
-catalog grouping.
+Publication is **fail closed**: a skill must have an entry in `scripts/categories.json`
+before it is published at all. A skill with no `categories.json` entry is skipped
+entirely — no page, no index card — rather than defaulting to a public page. Some
+published skills also talk to my own homelab infrastructure (internal hosts, deploy
+topology, credentials) and are additionally listed in `scripts/redacted.json`; those
+get a generic description and a "when to use it" list instead of the real source. See
+`scripts/categories.json` to classify/group a skill for publication, and
+`scripts/redacted.json` to mark a classified skill as restricted.
 
 ## Regenerating
 
@@ -32,6 +35,7 @@ on the server side — see the `skills-site` stack in `homelab-gitops`).
 
 ## Adding a skill
 
-Just add/edit the `SKILL.md` under `~/.claude/skills/`, add an entry to
-`scripts/categories.json`, and (if it references internal infrastructure) an entry in
+Add/edit the `SKILL.md` under `~/.claude/skills/`, then add an entry to
+`scripts/categories.json` — **required**, or the skill is held back and not
+published at all — and (if it references internal infrastructure) an entry in
 `scripts/redacted.json`. Re-run the generator and redeploy.
