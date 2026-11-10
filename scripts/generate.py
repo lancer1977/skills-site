@@ -7,6 +7,7 @@ import argparse
 import html
 import json
 import shutil
+import sys
 from pathlib import Path
 
 import yaml
@@ -224,29 +225,40 @@ def main():
 
     skills_dir = Path(args.skills_dir)
     out_dir = Path(args.out)
+
+    categories = load_json("categories.json")
+    redacted = load_json("redacted.json")
+
+    # Scan and parse every source before touching the output directory, so a
+    # malformed source never leaves a wiped or partial site/ behind.
+    parsed = []
+    malformed = []
+    for d in sorted(skills_dir.iterdir()):
+        skill_md = d / "SKILL.md"
+        if not skill_md.exists():
+            continue
+        try:
+            parsed.append(parse_skill_md(skill_md))
+        except Exception as e:
+            malformed.append(f"{skill_md}: {type(e).__name__}: {e}")
+
+    if malformed:
+        print(f"ERROR: {len(malformed)} malformed skill source(s); refusing to publish:", file=sys.stderr)
+        for line in malformed:
+            print(f"  {line}", file=sys.stderr)
+        sys.exit(1)
+
     if out_dir.exists():
         shutil.rmtree(out_dir)
     out_dir.mkdir(parents=True)
     (out_dir / "assets").mkdir()
     shutil.copy(SCRIPT_DIR / "style.css.template", out_dir / "assets" / "style.css")
 
-    categories = load_json("categories.json")
-    redacted = load_json("redacted.json")
-
     skills_by_category = {}
     total = 0
     restricted_count = 0
 
-    for d in sorted(skills_dir.iterdir()):
-        skill_md = d / "SKILL.md"
-        if not skill_md.exists():
-            continue
-        try:
-            name, description, body = parse_skill_md(skill_md)
-        except Exception as e:
-            print(f"SKIP {d.name}: {e}")
-            continue
-
+    for name, description, body in parsed:
         category = categories.get(name, "Uncategorized")
         sensitive = name in redacted
         if sensitive:
