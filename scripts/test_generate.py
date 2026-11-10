@@ -60,8 +60,7 @@ class MalformedSourceTests(unittest.TestCase):
         output = result.stdout + result.stderr
 
         self.assertNotEqual(result.returncode, 0, output)
-        self.assertIn(str(bad), output)
-        self.assertIn("frontmatter", output)
+        self.assertIn(f"{bad}: ValueError: {bad} has no frontmatter", output)
 
     def test_all_malformed_sources_are_reported_before_exit(self):
         bad_a = self.add_skill("broken-a", NO_FRONTMATTER)
@@ -72,9 +71,34 @@ class MalformedSourceTests(unittest.TestCase):
         output = result.stdout + result.stderr
 
         self.assertNotEqual(result.returncode, 0, output)
-        self.assertIn(str(bad_a), output)
-        self.assertIn(str(bad_b), output)
-        self.assertIn("name", output)
+        self.assertIn(f"{bad_a}: ValueError: {bad_a} has no frontmatter", output)
+        self.assertIn(f"{bad_b}: KeyError: 'name'", output)
+
+    def test_failed_run_does_not_create_index_or_partial_pages(self):
+        self.add_skill("broken-skill", NO_FRONTMATTER)
+        self.add_skill("good-skill", VALID_SKILL)
+
+        result = self.run_generator()
+
+        self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertFalse((self.out / "index.html").exists())
+        self.assertFalse((self.out / "good-skill").exists())
+
+    def test_failed_run_leaves_existing_site_untouched(self):
+        self.out.mkdir(parents=True)
+        sentinel = self.out / "sentinel.txt"
+        sentinel.write_text("keep me")
+        index = self.out / "index.html"
+        index.write_text("previous good index")
+        self.add_skill("broken-skill", NO_FRONTMATTER)
+        self.add_skill("good-skill", VALID_SKILL)
+
+        result = self.run_generator()
+
+        self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(sentinel.read_text(), "keep me")
+        self.assertEqual(index.read_text(), "previous good index")
+        self.assertFalse((self.out / "good-skill").exists())
 
     def test_all_valid_sources_exit_zero(self):
         self.add_skill("good-skill", VALID_SKILL)
