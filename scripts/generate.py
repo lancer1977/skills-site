@@ -7,6 +7,7 @@ import argparse
 import html
 import json
 import shutil
+import sys
 from pathlib import Path
 
 import yaml
@@ -236,6 +237,7 @@ def main():
     skills_by_category = {}
     total = 0
     restricted_count = 0
+    malformed = []
 
     for d in sorted(skills_dir.iterdir()):
         skill_md = d / "SKILL.md"
@@ -244,7 +246,7 @@ def main():
         try:
             name, description, body = parse_skill_md(skill_md)
         except Exception as e:
-            print(f"SKIP {d.name}: {e}")
+            malformed.append(f"{skill_md}: {type(e).__name__}: {e}")
             continue
 
         category = categories.get(name, "Uncategorized")
@@ -267,6 +269,12 @@ def main():
             "sensitive": sensitive,
             "redacted_desc": redacted.get(name, {}).get("description", ""),
         })
+
+    if malformed:
+        print(f"ERROR: {len(malformed)} malformed skill source(s); refusing to publish:", file=sys.stderr)
+        for line in malformed:
+            print(f"  {line}", file=sys.stderr)
+        sys.exit(1)
 
     (out_dir / "index.html").write_text(
         render_index(skills_by_category, total, restricted_count)
