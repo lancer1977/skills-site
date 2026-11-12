@@ -259,8 +259,11 @@ def main():
     restricted_count = 0
 
     for name, description, body in parsed:
-        category = categories.get(name, "Uncategorized")
+        category = categories.get(name)
         sensitive = name in redacted
+        if category is None:
+            print(f"SKIP {name}: unclassified (not in categories.json) — held back")
+            continue
         if sensitive:
             restricted_count += 1
         total += 1

@@ -2,13 +2,16 @@
 
 Run: python3 -m unittest discover -s scripts -p 'test_*.py'
 """
+import json
+import shutil
 import subprocess
 import sys
 import tempfile
 import unittest
 from pathlib import Path
 
-SCRIPT = Path(__file__).parent / "generate.py"
+SCRIPT_DIR = Path(__file__).parent
+SCRIPT = SCRIPT_DIR / "generate.py"
 
 VALID_SKILL = """---
 name: good-skill
@@ -35,6 +38,9 @@ class MalformedSourceTests(unittest.TestCase):
         self.skills = self.root / "skills"
         self.out = self.root / "site"
         self.skills.mkdir()
+        # Run against a private copy of scripts/ so the test controls categories.json.
+        self.script_dir = self.root / "scripts"
+        shutil.copytree(SCRIPT_DIR, self.script_dir, ignore=shutil.ignore_patterns("test_*.py", "__pycache__"))
 
     def tearDown(self):
         self._tmp.cleanup()
@@ -47,7 +53,7 @@ class MalformedSourceTests(unittest.TestCase):
 
     def run_generator(self):
         return subprocess.run(
-            [sys.executable, str(SCRIPT), "--skills-dir", str(self.skills), "--out", str(self.out)],
+            [sys.executable, str(self.script_dir / "generate.py"), "--skills-dir", str(self.skills), "--out", str(self.out)],
             capture_output=True,
             text=True,
         )
@@ -102,6 +108,11 @@ class MalformedSourceTests(unittest.TestCase):
 
     def test_all_valid_sources_exit_zero(self):
         self.add_skill("good-skill", VALID_SKILL)
+        # Fail-closed: a skill must be classified in categories.json to publish.
+        cats_path = self.script_dir / "categories.json"
+        cats = json.loads(cats_path.read_text())
+        cats["good-skill"] = "Dev Tools"
+        cats_path.write_text(json.dumps(cats))
 
         result = self.run_generator()
 
