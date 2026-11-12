@@ -33,6 +33,11 @@ python3 scripts/generate.py
 Output goes to `site/`, which is what gets served (plain `nginx:alpine`, no build step
 on the server side — see the `skills-site` stack in `homelab-gitops`).
 
+If any `SKILL.md` cannot be parsed (missing frontmatter, invalid YAML, no `name`), the
+generator lists every malformed path and its error on stderr and exits non-zero without
+writing the catalog index. There is no skip-and-continue mode; fix or remove the source
+and re-run. Tests: `python3 -m unittest discover -s scripts -p 'test_*.py'`.
+
 ## Adding a skill
 
 Add/edit the `SKILL.md` under `~/.claude/skills/`, then add an entry to
