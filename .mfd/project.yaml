@@ -1,0 +1,36 @@
+schema_version: 3
+portfolio:
+  repository: lancer1977/skills-site
+  projects:
+    - id: skills-site
+      role: tooling
+  shape:
+    kind: app
+merge_policy:
+  integration_branch: dev
+  protected_branch: main
+  required_checks:
+    - tier1
+  test_tiers:
+    unit:
+      command: bash scripts/ci-check.sh
+      required_for: [dev, main]
+    integration:
+      command: "# Integration tests not yet implemented"
+      required_for: []
+    automation:
+      command: "# Automation/smoke tests not yet implemented"
+      required_for: []
+  escalate_paths:
+    - ".github/workflows/**"
+    - ".devstudio/**"
+    - "**/*secret*"
+    - "**/*credential*"
+  escalate_labels:
+    - decision
+    - security
+    - blocker
+  require_pr_tests: true
+  test_paths:
+    - "scripts/test_*.py"
+    - "tests/test_*.py"
