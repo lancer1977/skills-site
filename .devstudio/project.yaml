@@ -1,0 +1,23 @@
+schema_version: devstudio-project/v2
+name: skills-site
+repo_root: .
+github:
+  repository: lancer1977/skills-site
+portfolio:
+  lifecycle: active
+  family: skills-site
+  roles: [tooling, documentation]
+  domains: [skills-catalog, static-site, claude-code]
+related_repositories: []
+agent:
+  docs_entrypoint: README.md
+commands:
+  start: []
+  build:
+  - python3 scripts/generate.py
+  test:
+  - bash scripts/ci-check.sh
+  lint: []
+languages:
+- python
+frameworks: []
